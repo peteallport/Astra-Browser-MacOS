@@ -1,0 +1,9 @@
+# Optional local configuration template. Copy to the ignored .dev.vars file
+# only when configuring access. Blank values are intentionally unconfigured.
+# The scaffold does not call AI Gateway or verify these credentials.
+CLOUDFLARE_ACCOUNT_ID=
+AI_GATEWAY_ID=
+CF_AIG_TOKEN=
+# BYOK stores the OpenAI provider key in AI Gateway, not the native app.
+# OPENAI_API_KEY is only for a future explicitly selected per-request key mode.
+# OPENAI_API_KEY=
