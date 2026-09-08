@@ -1,0 +1,95 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		AB0000000000000000000011 /* AstraBrowseApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB0000000000000000000021 /* AstraBrowseApp.swift */; };
+		AB0000000000000000000012 /* BrowserCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB0000000000000000000022 /* BrowserCommands.swift */; };
+		AB0000000000000000000013 /* BrowserTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB0000000000000000000023 /* BrowserTab.swift */; };
+		AB0000000000000000000014 /* BrowserStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB0000000000000000000024 /* BrowserStore.swift */; };
+		AB0000000000000000000015 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB0000000000000000000025 /* ContentView.swift */; };
+		AB0000000000000000000016 /* SidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB0000000000000000000026 /* SidebarView.swift */; };
+		AB0000000000000000000017 /* PlaceholderPageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB0000000000000000000027 /* PlaceholderPageView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		AB0000000000000000000020 /* AstraBrowse.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AstraBrowse.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AB0000000000000000000021 /* AstraBrowseApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AstraBrowseApp.swift; sourceTree = "<group>"; };
+		AB0000000000000000000022 /* BrowserCommands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserCommands.swift; sourceTree = "<group>"; };
+		AB0000000000000000000023 /* BrowserTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserTab.swift; sourceTree = "<group>"; };
+		AB0000000000000000000024 /* BrowserStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserStore.swift; sourceTree = "<group>"; };
+		AB0000000000000000000025 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		AB0000000000000000000026 /* SidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarView.swift; sourceTree = "<group>"; };
+		AB0000000000000000000027 /* PlaceholderPageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaceholderPageView.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		AB0000000000000000000040 = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		AB0000000000000000000030 = {isa = PBXGroup; children = (AB0000000000000000000031, AB0000000000000000000036); sourceTree = "<group>"; };
+		AB0000000000000000000031 /* AstraBrowse */ = {isa = PBXGroup; children = (AB0000000000000000000032, AB0000000000000000000033, AB0000000000000000000034, AB0000000000000000000035); path = AstraBrowse; sourceTree = "<group>"; };
+		AB0000000000000000000032 /* App */ = {isa = PBXGroup; children = (AB0000000000000000000021, AB0000000000000000000022); path = App; sourceTree = "<group>"; };
+		AB0000000000000000000033 /* Models */ = {isa = PBXGroup; children = (AB0000000000000000000023); path = Models; sourceTree = "<group>"; };
+		AB0000000000000000000034 /* Stores */ = {isa = PBXGroup; children = (AB0000000000000000000024); path = Stores; sourceTree = "<group>"; };
+		AB0000000000000000000035 /* Views */ = {isa = PBXGroup; children = (AB0000000000000000000025, AB0000000000000000000026, AB0000000000000000000027); path = Views; sourceTree = "<group>"; };
+		AB0000000000000000000036 /* Products */ = {isa = PBXGroup; children = (AB0000000000000000000020); name = Products; sourceTree = "<group>"; };
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		AB0000000000000000000050 /* AstraBrowse */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AB0000000000000000000081;
+			buildPhases = (AB0000000000000000000041, AB0000000000000000000040, AB0000000000000000000042);
+			buildRules = ();
+			dependencies = ();
+			name = AstraBrowse;
+			productName = AstraBrowse;
+			productReference = AB0000000000000000000020;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		AB0000000000000000000060 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {BuildIndependentTargetsInParallel = 1; LastSwiftUpdateCheck = 2700; LastUpgradeCheck = 2700; TargetAttributes = {AB0000000000000000000050 = {CreatedOnToolsVersion = 27.0; }; }; };
+			buildConfigurationList = AB0000000000000000000080;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (en, Base);
+			mainGroup = AB0000000000000000000030;
+			productRefGroup = AB0000000000000000000036;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (AB0000000000000000000050);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		AB0000000000000000000042 = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		AB0000000000000000000041 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (AB0000000000000000000011, AB0000000000000000000012, AB0000000000000000000013, AB0000000000000000000014, AB0000000000000000000015, AB0000000000000000000016, AB0000000000000000000017); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		AB0000000000000000000070 /* Debug */ = {isa = XCBuildConfiguration; buildSettings = {ALWAYS_SEARCH_USER_PATHS = NO; CLANG_ENABLE_MODULES = YES; CLANG_ENABLE_OBJC_ARC = YES; COPY_PHASE_STRIP = NO; DEBUG_INFORMATION_FORMAT = dwarf; ENABLE_STRICT_OBJC_MSGSEND = YES; ENABLE_TESTABILITY = YES; GCC_C_LANGUAGE_STANDARD = gnu17; GCC_OPTIMIZATION_LEVEL = 0; GCC_PREPROCESSOR_DEFINITIONS = ("DEBUG=1", "$(inherited)"); MACOSX_DEPLOYMENT_TARGET = 14.0; ONLY_ACTIVE_ARCH = YES; SDKROOT = macosx; SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)"; SWIFT_OPTIMIZATION_LEVEL = "-Onone"; }; name = Debug; };
+		AB0000000000000000000071 /* Release */ = {isa = XCBuildConfiguration; buildSettings = {ALWAYS_SEARCH_USER_PATHS = NO; CLANG_ENABLE_MODULES = YES; CLANG_ENABLE_OBJC_ARC = YES; COPY_PHASE_STRIP = NO; DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym"; ENABLE_NS_ASSERTIONS = NO; ENABLE_STRICT_OBJC_MSGSEND = YES; GCC_C_LANGUAGE_STANDARD = gnu17; MACOSX_DEPLOYMENT_TARGET = 14.0; SDKROOT = macosx; SWIFT_COMPILATION_MODE = wholemodule; SWIFT_OPTIMIZATION_LEVEL = "-O"; }; name = Release; };
+		AB0000000000000000000072 /* Debug */ = {isa = XCBuildConfiguration; buildSettings = {CODE_SIGN_STYLE = Automatic; COMBINE_HIDPI_IMAGES = YES; CURRENT_PROJECT_VERSION = 1; ENABLE_APP_SANDBOX = YES; ENABLE_HARDENED_RUNTIME = YES; GENERATE_INFOPLIST_FILE = YES; INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity"; INFOPLIST_KEY_NSPrincipalClass = NSApplication; LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/../Frameworks"); MARKETING_VERSION = 0.1; PRODUCT_BUNDLE_IDENTIFIER = org.astrabrowse.app; PRODUCT_NAME = "$(TARGET_NAME)"; SUPPORTED_PLATFORMS = macosx; SWIFT_EMIT_LOC_STRINGS = YES; SWIFT_VERSION = 6.0; }; name = Debug; };
+		AB0000000000000000000073 /* Release */ = {isa = XCBuildConfiguration; buildSettings = {CODE_SIGN_STYLE = Automatic; COMBINE_HIDPI_IMAGES = YES; CURRENT_PROJECT_VERSION = 1; ENABLE_APP_SANDBOX = YES; ENABLE_HARDENED_RUNTIME = YES; GENERATE_INFOPLIST_FILE = YES; INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity"; INFOPLIST_KEY_NSPrincipalClass = NSApplication; LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/../Frameworks"); MARKETING_VERSION = 0.1; PRODUCT_BUNDLE_IDENTIFIER = org.astrabrowse.app; PRODUCT_NAME = "$(TARGET_NAME)"; SUPPORTED_PLATFORMS = macosx; SWIFT_EMIT_LOC_STRINGS = YES; SWIFT_VERSION = 6.0; }; name = Release; };
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		AB0000000000000000000080 = {isa = XCConfigurationList; buildConfigurations = (AB0000000000000000000070, AB0000000000000000000071); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		AB0000000000000000000081 = {isa = XCConfigurationList; buildConfigurations = (AB0000000000000000000072, AB0000000000000000000073); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+/* End XCConfigurationList section */
+	};
+	rootObject = AB0000000000000000000060 /* Project object */;
+}
