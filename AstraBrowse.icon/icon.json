@@ -1,0 +1,126 @@
+{
+  "fill" : {
+    "automatic-gradient" : "extended-srgb:0.01800,0.04500,0.07500,1.00000"
+  },
+  "groups" : [
+    {
+      "layers" : [
+        {
+          "glass" : true,
+          "image-name" : "06-compass-pivot.svg",
+          "name" : "Compass pivot"
+        },
+        {
+          "glass" : true,
+          "image-name" : "04-needle-north.svg",
+          "name" : "North - red"
+        },
+        {
+          "glass" : true,
+          "image-name" : "05-needle-south.svg",
+          "name" : "South - pearl"
+        },
+        {
+          "glass" : false,
+          "hidden" : true,
+          "image-name" : "03-compass-graduations.svg",
+          "name" : "Compass graduations"
+        }
+      ],
+      "name" : "Compass",
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.38
+      },
+      "translucency" : {
+        "enabled" : false,
+        "value" : 0
+      }
+    },
+    {
+      "layers" : [
+        {
+          "glass" : false,
+          "image-name" : "07-near-starlight.svg",
+          "name" : "Foreground stars"
+        }
+      ],
+      "name" : "Near starlight",
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0
+      },
+      "translucency" : {
+        "enabled" : false,
+        "value" : 0
+      }
+    },
+    {
+      "layers" : [
+        {
+          "glass" : true,
+          "image-name" : "02-flower-petal-06.svg",
+          "name" : "Petal 6"
+        },
+        {
+          "glass" : true,
+          "image-name" : "02-flower-petal-05.svg",
+          "name" : "Petal 5"
+        },
+        {
+          "glass" : true,
+          "image-name" : "02-flower-petal-04.svg",
+          "name" : "Petal 4"
+        },
+        {
+          "glass" : true,
+          "image-name" : "02-flower-petal-03.svg",
+          "name" : "Petal 3"
+        },
+        {
+          "glass" : true,
+          "image-name" : "02-flower-petal-02.svg",
+          "name" : "Petal 2"
+        },
+        {
+          "glass" : true,
+          "image-name" : "02-flower-petal-01.svg",
+          "name" : "Petal 1"
+        }
+      ],
+      "name" : "Atlas Flower",
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.3
+      },
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.12
+      }
+    },
+    {
+      "layers" : [
+        {
+          "glass" : false,
+          "image-name" : "01-spiral-star-field.png",
+          "name" : "Spiral galaxy"
+        }
+      ],
+      "name" : "Deep Space",
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0
+      },
+      "translucency" : {
+        "enabled" : false,
+        "value" : 0
+      }
+    }
+  ],
+  "supported-platforms" : {
+    "circles" : [
+      "watchOS"
+    ],
+    "squares" : "shared"
+  }
+}
