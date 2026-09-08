@@ -24,7 +24,7 @@ News articles and feeds are potential first demonstrations of a broader idea: ma
 
 The SwiftUI browser shell builds and runs. It provides a sidebar, tabs, address entry, and placeholder content. The backend contains infrastructure scaffolding only: Worker configuration, Browser Run/R2/rate-limit bindings, gateway settings, and a health endpoint.
 
-Website conversion, Astra calls, Live View, the native JSON renderer, content caching, refresh delivery, and Yehoooo! Finance are planned features. They are not implemented by this scaffold. Pete has paused feature implementation after infrastructure and documentation.
+Website conversion, Astra calls, Live View, the native JSON renderer, content caching, refresh delivery, and Yehoooo! Finance are planned features. They are not implemented by this scaffold. Peter has paused feature implementation after infrastructure and documentation.
 
 ## Run the macOS shell
 
