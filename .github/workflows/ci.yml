@@ -1,0 +1,96 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# These jobs require no cloud secrets and never run a deployment or publish artifacts.
+jobs:
+  backend:
+    name: Backend checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      WRANGLER_SEND_METRICS: 'false'
+      WRANGLER_LOG_PATH: .wrangler/logs
+      CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV: 'false'
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version-file: .node-version
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Use the locally verified npm version
+        run: npm install --global npm@11.14.1 --no-audit --no-fund
+      - run: node --version && npm --version
+      - run: npm ci --no-audit --no-fund
+      - run: npm run types -- --check
+      - run: npm run typecheck
+      - run: npm test
+      - name: Bundle locally without uploading
+        run: npm run deploy:dry-run
+      - name: Check dependency and generated-type files stayed unchanged
+        run: git diff --exit-code -- package.json package-lock.json worker-configuration.d.ts
+
+  protocol:
+    name: Protocol checks
+    runs-on: macos-26
+    timeout-minutes: 15
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.5.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version-file: .node-version
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Use the locally verified npm version
+        run: npm install --global npm@11.14.1 --no-audit --no-fund
+      - run: node --version && npm --version && xcodebuild -version && xcrun swift --version
+      - run: npm ci --no-audit --no-fund
+        working-directory: backend
+      - run: bash script/ci/check-protocol.sh
+
+  macos:
+    name: macOS build
+    runs-on: macos-26
+    timeout-minutes: 30
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.5.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - run: xcodebuild -version && xcrun swift --version
+      - name: Resolve only the checked-in Swift package versions
+        env:
+          ASTRABROWSE_BUILD_DIR: ${{ runner.temp }}/AstraBrowse-CI/DerivedData
+        run: |
+          xcodebuild -resolvePackageDependencies \
+            -project AstraBrowse.xcodeproj -scheme AstraBrowse \
+            -derivedDataPath "$ASTRABROWSE_BUILD_DIR" \
+            -onlyUsePackageVersionsFromResolvedFile
+      - name: Build with local ad-hoc signing; do not launch
+        env:
+          ASTRABROWSE_BUILD_DIR: ${{ runner.temp }}/AstraBrowse-CI/DerivedData
+        run: bash script/build_and_run.sh --build-only
+      - name: Check Swift dependency pins stayed unchanged
+        run: git diff --exit-code -- AstraBrowse.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
