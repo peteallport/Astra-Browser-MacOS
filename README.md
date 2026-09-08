@@ -34,9 +34,9 @@ Open [AstraBrowse.xcodeproj](AstraBrowse.xcodeproj) in Xcode, or run:
 ./script/build_and_run.sh
 ```
 
-Command-T opens a tab; Command-L focuses the address field. The Codex Run action uses the same script. It builds with local ad-hoc signing, so an Apple Developer membership is not required. The verified toolchain is Xcode 27.0 beta; the deployment target is macOS 14+.
+Command-T opens a tab; Command-L focuses the address field. The Codex Run action uses the same script. It builds with local ad-hoc signing, so an Apple Developer membership is not required. The deployment target is macOS 14+.
 
-Build products go to temporary DerivedData to avoid signing issues from synced-folder metadata. `ASTRABROWSE_BUILD_DIR` overrides that location. This script does not produce a notarized distribution package.
+Build products go to temporary DerivedData outside the source checkout. `ASTRABROWSE_BUILD_DIR` overrides that location. This script does not produce a notarized distribution package.
 
 ## Backend infrastructure
 
