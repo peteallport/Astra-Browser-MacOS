@@ -1,6 +1,8 @@
 # AstraBrowse backend
 
-The Worker implements streaming URL resolution, immutable A2UI bundles, conditional manifests, and source revalidation at [astrabrowse-backend.quirk.workers.dev](https://astrabrowse-backend.quirk.workers.dev). **Finance/HN shared-cache checks pass, and a fresh Wikipedia conversion completed in 42.7 seconds, passed artifact validation, and rendered in the native app.** Current Astra access was verified by that run. The reliability fixes are now deployed: fresh verification receives an explicit Browser Run rate-limit error (HTTP 429), while shared Wikipedia cache delivery passes. The account is on Workers Free; no plan upgrade was performed. The earlier finance expected-change assertion remains unresolved. Local development stays cloud-disabled.
+The Worker implements streaming URL resolution, immutable A2UI bundles, conditional manifests, and source revalidation at [astrabrowse-backend.quirk.workers.dev](https://astrabrowse-backend.quirk.workers.dev). **After Pete completed the approved Workers Paid upgrade, a fresh IANA conversion passed browser exploration, Astra compilation, publication, and exact artifact/provenance validation.** Its validation stage arrived at 30.46 seconds, followed by ready. Finance/HN shared-cache checks and an earlier fresh Wikipedia conversion also passed; Wikipedia rendered in the native app.
+
+The reliability fixes are deployed with unchanged bindings and credentials. Cloudflare confirmed Workers Paid active at $5/month plus usage; the earlier HTTP 429 failures were observed before that upgrade. The finance expected-change assertion remains unresolved. Local development stays cloud-disabled.
 
 Read the [shared protocol](../docs/protocol.md), [planning source of truth](../planning.md), and [approved cloud activation record](../docs/cloud-change-proposal.md) before changing configuration.
 
@@ -49,13 +51,13 @@ Wrangler may need local filesystem and loopback-listener permission. A writable 
 | `GET /artifacts/:revision` | Validated immutable bundle with content-based identity |
 | `GET /demo/finance` | Public source HTML with clearly labeled simulated quotes changing every 30 seconds |
 
-Resolution has a 90-second total deadline. Concurrent requests for the same page share work within one Worker isolate; cancelling the last subscriber aborts that work. A complete validated bundle is persisted before a conditional manifest write makes it discoverable. A failed conversion or refresh preserves the prior valid manifest.
+Resolution has a 90-second total deadline. Concurrent requests for the same page share plain-data progress within one Worker isolate. I/O belongs to the initiating request; cancelling that owner aborts its work and gives followers a terminal cancellation error. Cancelling only a follower leaves the owner running. A complete validated bundle is persisted before a conditional manifest write makes it discoverable. A failed conversion or refresh preserves the prior valid manifest.
 
 Source revalidation defaults to 60 seconds. It reuses the stored extraction recipe, skips the Astra exploration planner, and makes no model call while that recipe remains compatible. A required-field/list mismatch or invalid selector triggers a bounded repair compilation from the new capture. An unchanged content hash advances `sourceCheckedAt` while preserving the bundle revision. Native clients poll manifests every 15 seconds and decide when to apply pending content.
 
 ## Cloud adapter and activation gate
 
-The production environment includes the Worker’s automatically authenticated `AI` binding. Latest deployment `10874f03-669f-4b59-9e2b-dc448bda805f` uses the provider-native Responses envelope and outer alias header:
+The production environment includes the Worker’s automatically authenticated `AI` binding. Latest deployment `e031dfdb-bac7-4b53-bb12-98cf4c09f0a4` retains the provider-native Responses envelope and outer alias header:
 
 ```ts
 env.AI.gateway("astrabrowse-demo-gateway").run({
@@ -70,11 +72,11 @@ env.AI.gateway("astrabrowse-demo-gateway").run({
 });
 ```
 
-Earlier unified routing failed with HTTP 404 / code `7003`, followed by provider-native gateway `2040` responses requesting `default`. Generated finance/HN artifacts subsequently passed shared-cache validation. Peter reported a duplicate `default` secret after removing its visible gateway entry; the underlying secret still exists, and no secrets were deleted. The latest IANA cold request failed with `CONVERSION_FAILED` before Live View, so current credential usability is not established. Do not delete or replace secrets based on the duplicate error. No key value belongs in the app, repository, or verification output.
+Earlier unified routing failed with HTTP 404 / code `7003`, followed by provider-native gateway `2040` responses requesting `default`. Generated finance/HN artifacts subsequently passed shared-cache validation. Peter reported a duplicate `default` secret after removing its visible gateway entry; the underlying secret still exists, and no secrets were deleted. An earlier IANA request failed with `CONVERSION_FAILED` before Live View; later fresh Wikipedia and post-upgrade IANA conversions verified current provider access. Do not delete or replace secrets based on the duplicate error. No key value belongs in the app, repository, or verification output.
 
 The approved `production` environment has `AI`, `BROWSER`, private R2 `ARTIFACTS` bound to `astrabrowse-artifacts`, and `RESOLVE_RATE_LIMITER` using namespace `2026090801` at 10 requests per 60 seconds. Its gateway ID is `astrabrowse-demo-gateway`; the verified nonsecret BYOK alias is `openai-astrabrowse-demo`. The bucket has been created and the Worker deployed. The top-level local environment has `CLOUD_EXECUTION_APPROVED=false`; production sets it to `true`. The previous account/auth-mode/model placeholders were removed, and the BYOK alias now has an explicit purpose in provider-native routing.
 
-The earlier R2 activation error is resolved: Peter enabled R2, approved the listed cloud changes, and the private artifact bucket was created. Latest deployment version: `10874f03-669f-4b59-9e2b-dc448bda805f`. Resource creation and successful browser capture do not establish successful model generation or artifact publication.
+The earlier R2 activation error is resolved: Peter enabled R2, approved the listed cloud changes, and the private artifact bucket was created. Latest deployment version: `e031dfdb-bac7-4b53-bb12-98cf4c09f0a4`. Resource creation and successful browser capture do not establish successful model generation or artifact publication.
 
 Only `CLOUD_EXECUTION_APPROVED=true` selects the cloud router. Every R2 operation and browser/model/DNS transport checks this runtime gate. Peter's September 8 approval covers the listed resources/configuration, deployment, one bounded live conversion, and one revalidation. Keep that existing approval distinct from additional resource changes or operations beyond its scope, which require confirmation. See the [activation record](../docs/cloud-change-proposal.md).
 
@@ -82,7 +84,7 @@ See Cloudflare’s [AI binding guidance](https://developers.cloudflare.com/ai-ga
 
 ## Current limits and evidence
 
-The local suite covers publication, immutable identity, ETags, coalescing, cancellation, freshness, repair, URL policy, extraction, and injected model behavior. Typecheck, 25 tests, and production dry-run bundling pass. Hosted finance/HN cache results validate model provenance and artifact hashes. Finance revalidation passed HTTP/schema/spec/recipe/generation checks and advanced `sourceCheckedAt`, but returned `changed: false` with unchanged content; the expected-change assertion failed. Its local state file remains at the prior `00:18:52Z` checkpoint because the checker stopped before saving. See the [verification record](../docs/local-verification.md).
+The local suite covers publication, immutable identity, ETags, coalescing, cancellation, freshness, repair, URL policy, extraction, and injected model behavior. Typecheck, all 44 backend tests, and production dry-run bundling pass for the unchanged implementation. The latest redeployment changed no code or bindings, so those checks were not rerun solely for the billing change. Hosted finance/HN cache results validate model provenance and artifact hashes. Finance revalidation passed HTTP/schema/spec/recipe/generation checks and advanced `sourceCheckedAt`, but returned `changed: false` with unchanged content; the expected-change assertion failed. Its local state file remains at the prior `00:18:52Z` checkpoint because the checker stopped before saving. See the [verification record](../docs/local-verification.md).
 
 There is no durable job queue or global single-compilation guarantee. Streaming work depends on an active client connection. Rate limits are approximate and local to a Cloudflare location; the configured 10 requests per 60 seconds is not a global spending cap. R2 conditional writes prevent a stale publisher replacing a newer manifest, even when separate isolates duplicate work.
 
