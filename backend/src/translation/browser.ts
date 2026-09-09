@@ -10,8 +10,22 @@ export type BrowserBinding = Parameters<typeof puppeteer.launch>[0];
 
 function browserError(error: unknown, code: string, message: string): TranslationError {
   if (error instanceof TranslationError) return error;
-  if (typeof error === "object" && error !== null && "status" in error && error.status === 429) {
+  let status = typeof error === "object" && error !== null && "status" in error ? error.status : undefined;
+  // The pinned SDK throws a plain Error here. Read only its exact status prefix;
+  // the trailing provider body is never returned, logged, or retained as a cause.
+  const sdkStatus = error instanceof Error ? /^Unable to create new browser: code: ([1-5]\d{2}): message:/.exec(error.message)?.[1] : undefined;
+  if (sdkStatus) status = Number(sdkStatus);
+  if (status === 429) {
+    if (error instanceof Error && /^Unable to create new browser: code: 429: message: Browser time limit exceeded for today\s*$/.test(error.message)) {
+      return new TranslationError("BROWSER_DAILY_LIMIT", "Browser Run has reached its daily browser-time limit. Cached pages remain available; new captures can resume after the quota resets.", 429);
+    }
     return new TranslationError("BROWSER_RATE_LIMITED", "Browser Run is temporarily at its session or launch limit. Try again shortly.", 429);
+  }
+  if (status === 401 || status === 403) {
+    return new TranslationError("BROWSER_AUTHORIZATION_FAILED", "Browser Run rejected the service authorization. Check the Worker browser binding and account access.", 503);
+  }
+  if (typeof status === "number" && status >= 500 && status <= 599) {
+    return new TranslationError("BROWSER_SERVICE_UNAVAILABLE", "Browser Run is temporarily unavailable. Try again shortly.", 503);
   }
   return new TranslationError(code, message, 502);
 }

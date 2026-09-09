@@ -160,3 +160,58 @@ test("Browser Run launch rate limits return a sanitized actionable error", async
     return true;
   });
 });
+
+test("plain SDK launch errors expose only safe status classifications", async () => {
+  for (const [status, expectedCode, expectedHTTP] of [
+    [429, "BROWSER_RATE_LIMITED", 429],
+    [401, "BROWSER_AUTHORIZATION_FAILED", 503],
+    [403, "BROWSER_AUTHORIZATION_FAILED", 503],
+    [500, "BROWSER_SERVICE_UNAVAILABLE", 503],
+    [503, "BROWSER_SERVICE_UNAVAILABLE", 503],
+    [599, "BROWSER_SERVICE_UNAVAILABLE", 503],
+    [400, "BROWSER_LAUNCH_FAILED", 502],
+  ] as const) {
+    const transport = createBrowserCaptureTransport({ fetch: async () => new Response() }, {
+      gate: createCloudAccessGate(true), resolveDNS: async () => ["8.8.8.8"],
+      launchBrowser: async () => { throw new Error(`Unable to create new browser: code: ${status}: message: SENSITIVE_PROVIDER_FIXTURE_BODY_WITH_SECRET`); },
+    });
+    await assert.rejects(transport.capture(new URL(SOURCE), { deadlineAt: Date.now() + 1000 }), error => {
+      assert.ok(error instanceof TranslationError);
+      assert.equal(error.code, expectedCode);
+      assert.equal(error.status, expectedHTTP);
+      assert.ok(!String(error.stack).includes("SENSITIVE_PROVIDER_FIXTURE"));
+      assert.equal(error.cause, undefined);
+      return true;
+    });
+  }
+});
+
+test("unrelated error text cannot masquerade as the exact SDK launch prefix", async () => {
+  const transport = createBrowserCaptureTransport({ fetch: async () => new Response() }, {
+    gate: createCloudAccessGate(true), resolveDNS: async () => ["8.8.8.8"],
+    launchBrowser: async () => { throw new Error("SENSITIVE_PROVIDER_FIXTURE Unable to create new browser: code: 429: message: unrelated text"); },
+  });
+  await assert.rejects(transport.capture(new URL(SOURCE), { deadlineAt: Date.now() + 1000 }), { code: "BROWSER_LAUNCH_FAILED", message: "Browser Run could not start a temporary session." });
+});
+
+test("the known daily browser-time quota body gives accurate reset guidance", async () => {
+  for (const [body, code] of [
+    ["Browser time limit exceeded for today", "BROWSER_DAILY_LIMIT"],
+    ["Browser time limit exceeded for today SENSITIVE_PROVIDER_FIXTURE", "BROWSER_RATE_LIMITED"],
+  ]) {
+    const transport = createBrowserCaptureTransport({ fetch: async () => new Response() }, {
+      gate: createCloudAccessGate(true), resolveDNS: async () => ["8.8.8.8"],
+      launchBrowser: async () => { throw new Error(`Unable to create new browser: code: 429: message: ${body}`); },
+    });
+    await assert.rejects(transport.capture(new URL(SOURCE), { deadlineAt: Date.now() + 1000 }), error => {
+      assert.ok(error instanceof TranslationError);
+      assert.equal(error.code, code);
+      assert.equal(error.status, 429);
+      assert.ok(!error.message.includes("SENSITIVE_PROVIDER_FIXTURE"));
+      if (code === "BROWSER_DAILY_LIMIT") {
+        assert.equal(error.message, "Browser Run has reached its daily browser-time limit. Cached pages remain available; new captures can resume after the quota resets.");
+      }
+      return true;
+    });
+  }
+});
