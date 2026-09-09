@@ -1,6 +1,6 @@
 # AstraBrowse backend
 
-The Worker implements streaming URL resolution, immutable A2UI bundles, conditional manifests, and source revalidation at [astrabrowse-backend.quirk.workers.dev](https://astrabrowse-backend.quirk.workers.dev). **Finance/HN shared-cache checks pass, and a fresh Wikipedia conversion completed in 42.7 seconds, passed artifact validation, and rendered in the native app.** Current Astra access is verified by that run; intermittent stream failures and the earlier finance expected-change assertion remain under investigation. Local development stays cloud-disabled.
+The Worker implements streaming URL resolution, immutable A2UI bundles, conditional manifests, and source revalidation at [astrabrowse-backend.quirk.workers.dev](https://astrabrowse-backend.quirk.workers.dev). **Finance/HN shared-cache checks pass, and a fresh Wikipedia conversion completed in 42.7 seconds, passed artifact validation, and rendered in the native app.** Current Astra access was verified by that run. The reliability fixes are now deployed: fresh verification receives an explicit Browser Run rate-limit error (HTTP 429), while shared Wikipedia cache delivery passes. The account is on Workers Free; no plan upgrade was performed. The earlier finance expected-change assertion remains unresolved. Local development stays cloud-disabled.
 
 Read the [shared protocol](../docs/protocol.md), [planning source of truth](../planning.md), and [approved cloud activation record](../docs/cloud-change-proposal.md) before changing configuration.
 

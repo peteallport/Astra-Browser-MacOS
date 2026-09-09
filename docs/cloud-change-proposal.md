@@ -6,7 +6,7 @@ Peter approved the listed resources/configuration, production deployment, one bo
 
 | Resource or setting | Current state |
 | --- | --- |
-| Worker `astrabrowse-backend` | Deployed at [astrabrowse-backend.quirk.workers.dev](https://astrabrowse-backend.quirk.workers.dev). Latest version: `10874f03-669f-4b59-9e2b-dc448bda805f`. |
+| Worker `astrabrowse-backend` | Deployed at [astrabrowse-backend.quirk.workers.dev](https://astrabrowse-backend.quirk.workers.dev). Latest version: `41a3af5a-7511-4517-a3d6-62da78708c61`. |
 | Private R2 bucket `astrabrowse-artifacts` | R2 enabled and bucket created; bound as `ARTIFACTS`. The earlier activation error is resolved. |
 | AI Gateway `astrabrowse-demo-gateway` | Existing gateway reused; its identity and configured OpenAI BYOK key were verified in the dashboard. No credential value was copied into source or the client. |
 | Workers AI binding `AI` | Added to the approved `production` environment for automatic gateway authentication. |
@@ -32,3 +32,10 @@ The initial unified route returned `7003`; earlier provider-native alias attempt
 The approved bounded checks were attempted and their partial results are recorded above. Further debugging must preserve existing resources, credentials, and useful cached artifacts. Streaming conversion has a 90-second deadline and depends on a connected client. Duplicate suppression is per Worker isolate; conditional R2 publication rejects a writer whose starting manifest changed but does not provide globally unique jobs or a transaction across both objects.
 
 Keep default local development cloud-disabled. The listed resources/configuration and bounded checks were approved, and Peter subsequently authorized committing and pushing all current work. Additional resources, secrets, schedules, or broader remote operations beyond that scope require separate confirmation. Repository visibility and hackathon submission are separate actions. This documentation update made no cloud calls, credential changes, or secret deletions.
+
+
+## September 8 reliability rollout
+
+Pete approved proceeding with commit/push, reconciliation with remote main, and deployment of the reviewed reliability fixes. Main includes fix commits `e2e2bbb` and `0ea5690`; merge `e1b1fb0` preserved the remote README branding and demo links. The existing Worker was redeployed as `41a3af5a-7511-4517-a3d6-62da78708c61` with the same R2, Browser Run, AI, gateway, and rate-limit bindings. No resources, credentials, billing plans, or limits were created or changed.
+
+Post-deployment checks validate Wikipedia shared-cache delivery, the initial connected/request-ID event, exactly one terminal SSE event, and immutable artifact hashes. New capture of the previously failed OpenAI developer page receives `BROWSER_RATE_LIMITED` from a real SDK HTTP 429 response, including on a later native retry. The account dashboard shows Workers Free as the current plan; an active-session listing was empty at the check. This proves a remaining provider limit, not a successful new conversion. Any paid-plan upgrade requires separate approval for its recurring and usage charges. See [current verification](local-verification.md).
