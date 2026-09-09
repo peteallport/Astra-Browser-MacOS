@@ -1,80 +1,91 @@
-# Backend infrastructure scaffold
+# AstraBrowse backend
 
-This Worker currently implements only `GET /health` and `HEAD /health`. It always reports `status: "infrastructure_scaffold"` and `ready: false`. Binding-presence booleans do not verify credentials, account entitlements, resource existence, or connectivity. No browser launch, model call, storage operation, refresh job, or rate-limit consumption occurs.
+The Worker implements streaming URL resolution, immutable A2UI bundles, conditional manifests, and source revalidation at [astrabrowse-backend.quirk.workers.dev](https://astrabrowse-backend.quirk.workers.dev). **Generated finance/HN bundles pass hosted shared-cache validation.** The latest unfamiliar IANA request failed before Live View, leaving current model credentials unverified. Finance revalidation returned 200 and a newer check time but unchanged content, failing the expected-change assertion. Local development remains cloud-disabled.
+
+Read the [shared protocol](../docs/protocol.md), [planning source of truth](../planning.md), and [approved cloud activation record](../docs/cloud-change-proposal.md) before changing configuration.
 
 ## Local development
 
-Use Node.js 22 or newer. From this directory:
+Use Node.js 24 or newer for the built-in TypeScript test and fixture commands. From this directory:
 
 ```sh
 npm ci
-npm run types
 npm run typecheck
+npm test
 npm run deploy:dry-run
 npm run dev
 ```
 
-The development server uses local bindings. No account credentials are needed for this health scaffold. Open `http://localhost:8787/health`; other paths return 404, and unsupported health methods return 405. `HEAD /health` has no body. Do not enable remote bindings merely to test health.
+`npm run dev` starts Wrangler with local bindings. With the checked-in configuration, `/health` and `/demo/finance` work and `/resolve` emits `CLOUD_APPROVAL_REQUIRED`. No binding is read or invoked by the default router. Do not enable remote bindings to run local tests.
 
-| Script | Purpose |
-| --- | --- |
-| `dev` | Run Wrangler's local development server |
-| `types` | Regenerate runtime and binding types from `wrangler.jsonc` |
-| `typecheck` | Check TypeScript without producing JavaScript |
-| `deploy:dry-run` | Validate and bundle locally into ignored `dist/`; does not deploy |
-| `deploy` | Deploy the Worker to the selected Cloudflare account |
-
-Generated `worker-configuration.d.ts` contains only scaffold defaults. After changing environment configuration, inspect regenerated types before committing; never commit credentials or personal account settings. Wrangler may need permission to bind a loopback port for type generation and local development. Set `WRANGLER_LOG_PATH=.wrangler/logs` if the environment restricts its default log directory.
-
-## Declared infrastructure
-
-| Binding | Resource/default | Current use |
-| --- | --- | --- |
-| `BROWSER` | Cloudflare Browser Run | Declaration only |
-| `ARTIFACTS` | Private R2 bucket `astrabrowse-artifacts` | Declaration only |
-| `RESOLVE_RATE_LIMITER` | Namespace `2026090801`, 10 requests per 60 seconds | Declaration only; enforcement is not implemented |
-
-Confirm that the proposed rate-limit namespace is unique in the chosen account before deploying. Counters are approximate and local to each Cloudflare location, so this binding is not a global spending cap. See [Browser Run configuration](https://developers.cloudflare.com/browser-run/reference/wrangler/) and [rate-limit bindings](https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/).
-
-Nonsecret settings in `wrangler.jsonc`:
-
-| Setting | Default |
-| --- | --- |
-| `CLOUDFLARE_ACCOUNT_ID` | Empty; configure when connecting AI Gateway |
-| `AI_GATEWAY_ID` | `astrabrowse` |
-| `AI_GATEWAY_AUTH_MODE` | `byok` |
-| `AI_GATEWAY_BYOK_ALIAS` | `default` |
-| `ASTRA_MODEL` | `gpt-6-astra` |
-| `ASTRA_REASONING_EFFORT` | `low` |
-
-These are intended integration settings, not evidence of provisioned access. Wrangler's deployment account selection is separate from the Worker's `CLOUDFLARE_ACCOUNT_ID` variable; select the intended account explicitly during later setup.
-
-## Configure hosted access later
-
-These steps are documentation only; scaffold creation does not provision or deploy anything. When deployment is authorized, select a Cloudflare account, ensure Browser Run and R2 are available, create an AI Gateway named `astrabrowse` (or change the setting), and configure its authentication and OpenAI BYOK credential in the Cloudflare dashboard.
-
-The intended provider endpoint is:
-
-```text
-https://gateway.ai.cloudflare.com/v1/{account_id}/{gateway_id}/openai/responses
-```
-
-Store the OpenAI provider key in AI Gateway. The future Worker adapter will use a `CF_AIG_TOKEN` Worker secret for the `cf-aig-authorization` header and the selected BYOK alias. The native app receives neither credential. A separately selected per-request provider-key mode could use an `OPENAI_API_KEY` Worker secret, but that mode is not implemented. Provider model access and Responses/SSE/structured-output behavior must be verified when the real adapter is built. See [OpenAI provider routing](https://developers.cloudflare.com/ai-gateway/usage/providers/openai/), [BYOK](https://developers.cloudflare.com/ai-gateway/configuration/bring-your-own-keys/), and [Gateway authentication](https://developers.cloudflare.com/ai-gateway/configuration/authentication/).
-
-For local integration work later, copy `.dev.vars.example` to the ignored `.dev.vars` file and enter values locally. Do not put credentials in `wrangler.jsonc`, source files, command arguments, screenshots, or the native client.
-
-The following commands **create or change hosted resources** and have not been run:
+To exercise the native client’s real HTTP contract without any external service, use this command instead of `npm run dev`:
 
 ```sh
-# After choosing/authenticating the intended Cloudflare account:
-npx wrangler r2 bucket create astrabrowse-artifacts
-npm run deploy
-# Enter the gateway token at Wrangler's secret prompt, not as an argument:
-npx wrangler secret put CF_AIG_TOKEN
+npm run dev:fixture
 ```
 
-Keep the R2 bucket private; artifact delivery belongs in the future Worker implementation. See [R2 bucket creation](https://developers.cloudflare.com/r2/buckets/create-buckets/) and [Worker secrets](https://developers.cloudflare.com/workers/configuration/secrets/).
+It binds only `127.0.0.1:8787`; set `LOCAL_FIXTURE_PORT` to select another port. Set the native app backend to `http://localhost:8787` and resolve a valid HTTPS URL. The response prominently identifies itself as **LOCAL TEST FIXTURE**, with hand-authored layout and synthetic finance content. It is not an Astra conversion or a recorded live result. The fixture serves the same bundle, ETag, and revalidation protocol as the Worker, with no cloud or source network access. Stop one server before starting the other on the same port.
 
-## Dependency notes
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Local Wrangler server; external execution disabled by default |
+| `npm run dev:fixture` | Local protocol fixture for native integration |
+| `npm run typecheck` | TypeScript verification |
+| `npm test` | Local router, publication, extraction, compiler, policy, and injected transport tests |
+| `npm run deploy:dry-run` | Bundle the `production` environment locally into ignored `dist/`; no deployment |
+| `npm run types` | Regenerate types after an approved configuration change |
+| `npm run deploy` | Deploy the approved `production` environment |
 
-There are no runtime npm dependencies. Development tooling is pinned in `package-lock.json`. A narrow `sharp` override to `0.35.4` patches Miniflare's transitive image library for [GHSA-rgj7-g3m4-5g8c](https://github.com/advisories/GHSA-rgj7-g3m4-5g8c); remove the override when upstream selects a fixed version. This scaffold does not process images.
+Wrangler may need local filesystem and loopback-listener permission. A writable `WRANGLER_LOG_PATH` avoids its default user log directory. Generated binding types reflect the current declarations only; they do not verify hosted resources. Inspect generated types before committing them, and never include credentials.
+
+## Implemented contract
+
+| Endpoint | Behavior |
+| --- | --- |
+| `GET /health`, `HEAD /health` | Implemented features, execution mode, and explicitly unverified cloud readiness |
+| `POST /resolve` | `{url}` request; SSE `status`, transient `liveView`, and terminal `ready` or `error` |
+| `GET /pages/:key/manifest` | Current manifest with ETag and conditional 304 |
+| `POST /pages/:key/revalidate` | JSON `{manifest,changed}`; recent source checks reuse the prior result |
+| `GET /artifacts/:revision` | Validated immutable bundle with content-based identity |
+| `GET /demo/finance` | Public source HTML with clearly labeled simulated quotes changing every 30 seconds |
+
+Resolution has a 90-second total deadline. Concurrent requests for the same page share work within one Worker isolate; cancelling the last subscriber aborts that work. A complete validated bundle is persisted before a conditional manifest write makes it discoverable. A failed conversion or refresh preserves the prior valid manifest.
+
+Source revalidation defaults to 60 seconds. It reuses the stored extraction recipe, skips the Astra exploration planner, and makes no model call while that recipe remains compatible. A required-field/list mismatch or invalid selector triggers a bounded repair compilation from the new capture. An unchanged content hash advances `sourceCheckedAt` while preserving the bundle revision. Native clients poll manifests every 15 seconds and decide when to apply pending content.
+
+## Cloud adapter and activation gate
+
+The production environment includes the Worker’s automatically authenticated `AI` binding. Latest deployment `10874f03-669f-4b59-9e2b-dc448bda805f` uses the provider-native Responses envelope and outer alias header:
+
+```ts
+env.AI.gateway("astrabrowse-demo-gateway").run({
+  provider: "openai",
+  endpoint: "responses",
+  headers: { "Content-Type": "application/json" },
+  query: { model: "gpt-6-astra", ...responsesInput },
+}, {
+  gateway: { skipCache: true, retries: { maxAttempts: 1 } },
+  extraHeaders: { "cf-aig-byok-alias": "openai-astrabrowse-demo" },
+  signal,
+});
+```
+
+Earlier unified routing failed with HTTP 404 / code `7003`, followed by provider-native gateway `2040` responses requesting `default`. Generated finance/HN artifacts subsequently passed shared-cache validation. Peter reported a duplicate `default` secret after removing its visible gateway entry; the underlying secret still exists, and no secrets were deleted. The latest IANA cold request failed with `CONVERSION_FAILED` before Live View, so current credential usability is not established. Do not delete or replace secrets based on the duplicate error. No key value belongs in the app, repository, or verification output.
+
+The approved `production` environment has `AI`, `BROWSER`, private R2 `ARTIFACTS` bound to `astrabrowse-artifacts`, and `RESOLVE_RATE_LIMITER` using namespace `2026090801` at 10 requests per 60 seconds. Its gateway ID is `astrabrowse-demo-gateway`; the verified nonsecret BYOK alias is `openai-astrabrowse-demo`. The bucket has been created and the Worker deployed. The top-level local environment has `CLOUD_EXECUTION_APPROVED=false`; production sets it to `true`. The previous account/auth-mode/model placeholders were removed, and the BYOK alias now has an explicit purpose in provider-native routing.
+
+The earlier R2 activation error is resolved: Peter enabled R2, approved the listed cloud changes, and the private artifact bucket was created. Latest deployment version: `10874f03-669f-4b59-9e2b-dc448bda805f`. Resource creation and successful browser capture do not establish successful model generation or artifact publication.
+
+Only `CLOUD_EXECUTION_APPROVED=true` selects the cloud router. Every R2 operation and browser/model/DNS transport checks this runtime gate. Peter's September 8 approval covers the listed resources/configuration, deployment, one bounded live conversion, and one revalidation. Keep that existing approval distinct from additional resource changes or operations beyond its scope, which require confirmation. See the [activation record](../docs/cloud-change-proposal.md).
+
+See Cloudflare’s [AI binding guidance](https://developers.cloudflare.com/ai-gateway/usage/providers/workersai/), [BYOK](https://developers.cloudflare.com/ai-gateway/configuration/bring-your-own-keys/), [Browser Run configuration](https://developers.cloudflare.com/browser-run/reference/wrangler/), and [rate-limit binding documentation](https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/).
+
+## Current limits and evidence
+
+The local suite covers publication, immutable identity, ETags, coalescing, cancellation, freshness, repair, URL policy, extraction, and injected model behavior. Typecheck, 25 tests, and production dry-run bundling pass. Hosted finance/HN cache results validate model provenance and artifact hashes. Finance revalidation passed HTTP/schema/spec/recipe/generation checks and advanced `sourceCheckedAt`, but returned `changed: false` with unchanged content; the expected-change assertion failed. Its local state file remains at the prior `00:18:52Z` checkpoint because the checker stopped before saving. See the [verification record](../docs/local-verification.md).
+
+There is no durable job queue or global single-compilation guarantee. Streaming work depends on an active client connection. Rate limits are approximate and local to a Cloudflare location; the configured 10 requests per 60 seconds is not a global spending cap. R2 conditional writes prevent a stale publisher replacing a newer manifest, even when separate isolates duplicate work.
+
+Only public HTTPS pages are supported. The acquisition adapter checks URL/redirect/request destinations and public DNS results; it does not claim complete DNS-rebinding protection without pinned egress. No private sessions, authentication, forms, payment actions, or access-control bypass are supported. Live View URLs are ephemeral progress events and are never published in bundles or manifests. Layout rendering uses the constrained A2UI catalog understood by the native client.
+
+Runtime dependencies are pinned `@cloudflare/puppeteer` and `linkedom`. The Puppeteer dependency tree currently reports `extract-zip` archive-extraction advisories; the Worker uses the remote Browser Run transport and does not invoke browser download/archive extraction APIs. This does not clear the dependency advisory. The `sharp` development override remains pinned to `0.35.4` for its earlier advisory; dependency changes should be reviewed rather than applying automatic major downgrades.

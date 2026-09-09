@@ -1,17 +1,19 @@
+// Cloud resources and bounded live verification approved by Pete on September 8, 2026.
+// Default local development remains cloud-disabled; deploy with --env production.
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "astrabrowse-backend",
+  "account_id": "7ab7b97c380400e3bccc5d148fe81474",
   "main": "src/index.ts",
   "compatibility_date": "2026-09-08",
-  "compatibility_flags": ["nodejs_compat"],
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
   "workers_dev": true,
   "observability": {
     "enabled": true,
     "head_sampling_rate": 1
   },
-  // Bindings are declared for the later implementation. Health checks do not
-  // launch browsers, read/write R2, or consume rate-limit counters.
-  // Local development stays local; do not set remote:true as a setup shortcut.
   "browser": {
     "binding": "BROWSER"
   },
@@ -24,8 +26,6 @@
   "ratelimits": [
     {
       "name": "RESOLVE_RATE_LIMITER",
-      // Proposed namespace; confirm uniqueness in the selected account before
-      // deployment. Counters are per Cloudflare location, not a global budget.
       "namespace_id": "2026090801",
       "simple": {
         "limit": 10,
@@ -33,14 +33,41 @@
       }
     }
   ],
-  // Nonsecret defaults only. Account and gateway access are configured later.
-  // Never put CF_AIG_TOKEN or an OpenAI provider key in vars.
   "vars": {
-    "CLOUDFLARE_ACCOUNT_ID": "",
-    "AI_GATEWAY_ID": "astrabrowse",
-    "AI_GATEWAY_AUTH_MODE": "byok",
-    "AI_GATEWAY_BYOK_ALIAS": "default",
-    "ASTRA_MODEL": "gpt-6-astra",
-    "ASTRA_REASONING_EFFORT": "low"
+    "CLOUD_EXECUTION_APPROVED": "false",
+    "AI_GATEWAY_ID": "astrabrowse-demo-gateway",
+    "AI_GATEWAY_BYOK_ALIAS": "openai-astrabrowse-demo"
+  },
+  "env": {
+    "production": {
+      "name": "astrabrowse-backend",
+      "browser": {
+        "binding": "BROWSER"
+      },
+      "r2_buckets": [
+        {
+          "binding": "ARTIFACTS",
+          "bucket_name": "astrabrowse-artifacts"
+        }
+      ],
+      "ratelimits": [
+        {
+          "name": "RESOLVE_RATE_LIMITER",
+          "namespace_id": "2026090801",
+          "simple": {
+            "limit": 10,
+            "period": 60
+          }
+        }
+      ],
+      "ai": {
+        "binding": "AI"
+      },
+      "vars": {
+        "CLOUD_EXECUTION_APPROVED": "true",
+        "AI_GATEWAY_ID": "astrabrowse-demo-gateway",
+        "AI_GATEWAY_BYOK_ALIAS": "openai-astrabrowse-demo"
+      }
+    }
   }
 }

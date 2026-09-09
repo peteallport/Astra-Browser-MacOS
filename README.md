@@ -26,11 +26,13 @@ News articles and feeds are potential first demonstrations of a broader idea: ma
 
 ## Current status
 
-The SwiftUI browser shell builds and runs. It provides a sidebar, tabs, address entry, and placeholder content. The backend contains infrastructure scaffolding only: Worker configuration, Browser Run/R2/rate-limit bindings, gateway settings, and a health endpoint.
+The macOS app builds with the pinned A2UI-Swift renderer, streaming backend client, local cache, filtering, and native update handling. The TypeScript backend implements bounded capture/compilation adapters, immutable artifacts, conditional manifests, and revalidation. The shared wire format is documented in [docs/protocol.md](docs/protocol.md).
 
-Website conversion, Astra calls, Live View, the native JSON renderer, content caching, refresh delivery, and Yehoooo! Finance are planned features. They are not implemented by this scaffold. Peter has paused feature implementation after infrastructure and documentation.
+The backend is deployed at [astrabrowse-backend.quirk.workers.dev](https://astrabrowse-backend.quirk.workers.dev), with private R2 storage and AI Gateway. **Finance and Hacker News reopen from the shared cache as validated `gpt-6-astra` bundles.** The unfamiliar IANA conversion failed with `CONVERSION_FAILED` before Live View, so current model credentials remain unverified. Finance revalidation returned HTTP 200 and advanced `sourceCheckedAt`, but content remained unchanged (`changed: false`), failing the expected-change assertion. A complete live refresh demonstration is not verified. See [planning.md](planning.md) and [verification evidence](docs/local-verification.md).
 
-## Run the macOS shell
+**Authorized cloud scope:** Peter approved the listed resources, production configuration and deployment, one bounded live conversion, and one revalidation on September 8. That approval remains in force for this integration. Additional resource changes or operations beyond the approved scope require separate confirmation; see the [activation record](docs/cloud-change-proposal.md).
+
+## Run the macOS app
 
 Open [AstraBrowse.xcodeproj](AstraBrowse.xcodeproj) in Xcode, or run:
 
@@ -38,24 +40,26 @@ Open [AstraBrowse.xcodeproj](AstraBrowse.xcodeproj) in Xcode, or run:
 ./script/build_and_run.sh
 ```
 
-Command-T opens a tab; Command-L focuses the address field. The Codex Run action uses the same script. It builds with local ad-hoc signing, so an Apple Developer membership is not required. The deployment target is macOS 14+.
+Command-T opens a tab; Command-L focuses the address field. The Codex Run action uses the same script. It builds with local ad-hoc signing, so an Apple Developer membership is not required. The resolved Swift packages require Swift 6.2 or newer. The deployment target is macOS 14+.
 
 Build products go to temporary DerivedData outside the source checkout. `ASTRABROWSE_BUILD_DIR` overrides that location. This script does not produce a notarized distribution package.
 
-## Backend infrastructure
+## Backend development
 
-Use Node.js 22 or newer:
+Use Node.js 24 or newer:
 
 ```sh
 cd backend
 npm ci
-npm run types
 npm run typecheck
+npm test
 npm run deploy:dry-run
 npm run dev
 ```
 
-The health endpoint is `/health`. A successful health response verifies the scaffold process, not a working browser, model call, or storage integration. The app is not connected to this endpoint yet.
+For a completely local native/API check, run `npm run dev:fixture` **instead of** `npm run dev`. In the app’s Backend Settings, use `http://localhost:8787`, then enter a public HTTPS URL. The server returns a prominently labeled hand-authored fixture with simulated finance quotes; it does not fetch or convert that website. The fixture exercises the real extraction, validation, caching, and content-delivery contracts without cloud access.
+
+The health endpoint is `/health`. A healthy process does not establish successful model generation. Default local development remains cloud-disabled; the approved `production` environment enables cloud bindings. `npm run deploy` and `npm run deploy:dry-run` target that production environment, with only the former making a deployment.
 
 Use the [backend setup guide](backend/README.md) and [local configuration example](backend/.dev.vars.example) for Cloudflare resources and settings. Keep credentials in ignored local secret files or Cloudflare secrets, never in the Mac app or source control. No cloud resources are provisioned merely by checking out this repository or running a deployment dry run.
 

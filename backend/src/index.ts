@@ -1,59 +1,27 @@
-/**
- * Infrastructure scaffold only. No source acquisition, model inference,
- * artifact publication, or content-update pipeline is implemented here.
- */
+import { MemoryArtifactStore } from "./artifacts.ts";
+import { APIError } from "./protocol.ts";
+import { createRouter } from "./router.ts";
+import { createApprovedCloudRouter, type CloudEnvironment } from "./cloud.ts";
+
+export const assertCloudDisabled = (): never => {
+  throw new APIError("CLOUD_APPROVAL_REQUIRED", "Cloud conversion is disabled pending approval of the Cloudflare configuration and gateway ID.", 503);
+};
+
+// Safe default: no binding is touched, including during local Wrangler development.
+const local = createRouter({
+  store: new MemoryArtifactStore(),
+  mode: "cloud-disabled",
+  assertExecutionAllowed: assertCloudDisabled,
+  pipeline: { capture: async () => assertCloudDisabled(), compile: async () => assertCloudDisabled(), reextract: () => assertCloudDisabled() },
+});
+
+const approvedRouters = new WeakMap<object, ReturnType<typeof createApprovedCloudRouter>>();
 export default {
-  fetch(request, env): Response {
-    const url = new URL(request.url);
-
-    if (url.pathname !== "/health") {
-      return Response.json(
-        { error: { code: "NOT_FOUND", message: "Only /health is implemented." } },
-        { status: 404, headers: { "Cache-Control": "no-store" } },
-      );
-    }
-
-    if (request.method !== "GET" && request.method !== "HEAD") {
-      return Response.json(
-        { error: { code: "METHOD_NOT_ALLOWED", message: "Use GET or HEAD." } },
-        {
-          status: 405,
-          headers: { Allow: "GET, HEAD", "Cache-Control": "no-store" },
-        },
-      );
-    }
-
-    const health = {
-      service: "astrabrowse-backend",
-      status: "infrastructure_scaffold",
-      ready: false,
-      features: {
-        health: "implemented",
-        sourceAcquisition: "not_implemented",
-        astraCompilation: "not_implemented",
-        artifactStorage: "not_implemented",
-        contentUpdates: "not_implemented",
-        resolveRateLimiting: "not_implemented",
-      },
-      configuration: {
-        browserBindingPresent: env.BROWSER !== undefined,
-        artifactBindingPresent: env.ARTIFACTS !== undefined,
-        rateLimitBindingPresent: env.RESOLVE_RATE_LIMITER !== undefined,
-        gatewayAccountPresent: env.CLOUDFLARE_ACCOUNT_ID.trim().length > 0,
-        gatewayNamePresent: env.AI_GATEWAY_ID.trim().length > 0,
-        credentials: "not_checked",
-        remoteServices: "not_checked",
-      },
-    };
-
-    // Binding/configuration presence is not proof of remote resource existence,
-    // authorization, provider entitlement, or successful service connectivity.
-    return new Response(request.method === "HEAD" ? null : JSON.stringify(health), {
-      status: 200,
-      headers: {
-        "Content-Type": "application/json; charset=utf-8",
-        "Cache-Control": "no-store",
-      },
-    });
+  fetch(request: Request, env: Env): Promise<Response> {
+    const cloud = env as Env & CloudEnvironment;
+    if (cloud.CLOUD_EXECUTION_APPROVED !== "true") return local(request);
+    let router = approvedRouters.get(env);
+    if (!router) { router = createApprovedCloudRouter(cloud); approvedRouters.set(env, router); }
+    return router(request);
   },
 } satisfies ExportedHandler<Env>;

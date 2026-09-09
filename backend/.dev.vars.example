@@ -1,9 +1,11 @@
-# Optional local configuration template. Copy to the ignored .dev.vars file
-# only when configuring access. Blank values are intentionally unconfigured.
-# The scaffold does not call AI Gateway or verify these credentials.
-CLOUDFLARE_ACCOUNT_ID=
-AI_GATEWAY_ID=
-CF_AIG_TOKEN=
-# BYOK stores the OpenAI provider key in AI Gateway, not the native app.
-# OPENAI_API_KEY is only for a future explicitly selected per-request key mode.
-# OPENAI_API_KEY=
+# Optional local settings. Copy to ignored .dev.vars only if overrides are needed.
+# Local development must stay cloud-disabled; production settings are separate.
+CLOUD_EXECUTION_APPROVED=false
+AI_GATEWAY_ID=astrabrowse-demo-gateway
+AI_GATEWAY_BYOK_ALIAS=openai-astrabrowse-demo
+# Cached generated artifacts are verified. The latest cold conversion failed,
+# so current provider access remains unverified after the duplicate-secret issue.
+# No secrets were deleted; do not remove existing secrets without authorization.
+# Provider credentials live in AI Gateway BYOK, not here or in the native app.
+# The selected automatically authenticated AI binding requires no CF_AIG_TOKEN
+# or OPENAI_API_KEY in this example. Never commit real credentials.
