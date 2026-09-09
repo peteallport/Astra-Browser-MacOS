@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { fileURLToPath } from "node:url";
 import { MemoryArtifactStore, R2ArtifactStore, publishBundle } from "../src/artifacts.ts";
 import { APIError, pageKeyFor, revisionOf, type PageManifest } from "../src/protocol.ts";
 import { createRouter } from "../src/router.ts";
@@ -15,13 +16,13 @@ function ready(text: string): { manifest: PageManifest } {
   assert.ok(match, text);
   return JSON.parse(match[1]!);
 }
-function setup(options: { gate?: () => void; delay?: number; failRefresh?: boolean; drift?: boolean } = {}) {
+function setup(options: { gate?: () => void; delay?: number; deadlineMS?: number; failRefresh?: boolean; drift?: boolean } = {}) {
   let clock = start;
   let captures = 0;
   let compiles = 0;
   let lastPurpose = "";
   const store = new MemoryArtifactStore();
-  const handle = createRouter({ store, now: () => clock, assertExecutionAllowed: options.gate ?? (() => {}), mode: "local-test-fixture",
+  const handle = createRouter({ store, now: () => clock, ...(options.deadlineMS === undefined ? {} : { deadlineMS: options.deadlineMS }), assertExecutionAllowed: options.gate ?? (() => {}), mode: "local-test-fixture",
     pipeline: {
       async capture(url, run) {
         captures++; lastPurpose = run.purpose ?? "";
@@ -169,7 +170,11 @@ test("sanitized translation errors retain SSE and HTTP diagnostics without expos
     reextract() { throw Error("Unexpected extraction"); },
   } });
   const modelFailure = await (await app(request("/resolve", { url: source }))).text();
-  assert.match(modelFailure, /event: error\ndata: \{"code":"MODEL_MISMATCH","message":"The provider did not confirm the requested Astra model\."\}/);
+  const modelError = JSON.parse(modelFailure.match(/event: error\ndata: ([^\n]+)/)![1]!);
+  assert.equal(modelError.code, "MODEL_MISMATCH");
+  assert.equal(modelError.message, "The provider did not confirm the requested Astra model.");
+  assert.equal(modelError.stage, "compile");
+  assert.match(modelError.requestID, /^[a-f0-9-]{36}$/);
   assert.doesNotMatch(modelFailure, /CONVERSION_FAILED|event: ready/);
 
   // Only our typed, deliberately sanitized error is public; a same-name provider error stays opaque.
@@ -186,4 +191,168 @@ test("sanitized translation errors retain SSE and HTTP diagnostics without expos
   assert.equal(dnsFailure.status, 422);
   assert.deepEqual(await dnsFailure.json(), { error: { code: "UNSAFE_DNS", message: "The public source resolved to a disallowed destination." } });
   assert.deepEqual((await store.getManifest(key))!.manifest, previous.manifest);
+});
+
+
+test("owner cancellation returns terminal errors to itself and its follower; a later resolve can recover", async () => {
+  const app = setup({ delay: 100 });
+  const owner = new AbortController();
+  const ownerResponse = await app.handle(request("/resolve", { url: source }, owner.signal));
+  const ownerText = ownerResponse.text();
+  await new Promise(resolve => setTimeout(resolve, 5));
+  const follower = await app.handle(request("/resolve", { url: source }));
+  const followerText = follower.text();
+  await new Promise(resolve => setTimeout(resolve, 5));
+  owner.abort();
+  assert.match(await ownerText, /"code":"CANCELLED"/);
+  assert.match(await followerText, /"code":"SHARED_CONVERSION_CANCELLED"/);
+  assert.equal(app.captures, 1);
+  assert.equal(app.compiles, 0);
+  assert.equal(await app.store.getManifest(await pageKeyFor(source)), null);
+  ready(await (await app.handle(request("/resolve", { url: source }))).text());
+  assert.equal(app.captures, 2);
+  assert.equal(app.compiles, 1);
+});
+
+test("cancelling a follower's response reader does not cancel its owner or poison future cache reads", async () => {
+  const app = setup({ delay: 40 });
+  const owner = await app.handle(request("/resolve", { url: source }));
+  const ownerText = owner.text();
+  await new Promise(resolve => setTimeout(resolve, 5));
+  const follower = await app.handle(request("/resolve", { url: source }));
+  const reader = follower.body!.getReader();
+  await reader.read();
+  await reader.cancel();
+  const result = ready(await ownerText);
+  assert.equal(app.captures, 1);
+  assert.equal(app.compiles, 1);
+  assert.equal(ready(await (await app.handle(request("/resolve", { url: source }))).text()).manifest.bundleRevision, result.manifest.bundleRevision);
+});
+
+test("deadline emits exactly one terminal error to owner and follower without publishing", async () => {
+  const app = setup({ delay: 1000, deadlineMS: 30 });
+  const owner = await app.handle(request("/resolve", { url: source }));
+  const ownerText = owner.text();
+  await new Promise(resolve => setTimeout(resolve, 5));
+  const follower = await app.handle(request("/resolve", { url: source }));
+  for (const text of await Promise.all([ownerText, follower.text()])) {
+    assert.equal((text.match(/event: error/g) ?? []).length, 1);
+    assert.match(text, /"code":"DEADLINE_EXCEEDED"/);
+    assert.doesNotMatch(text, /event: ready/);
+  }
+  assert.equal(app.compiles, 0);
+  assert.equal(await app.store.getManifest(await pageKeyFor(source)), null);
+});
+
+test("connection status and correlation header arrive before a slow acquisition", async () => {
+  const app = setup({ delay: 1000 });
+  const response = await app.handle(request("/resolve", { url: source }));
+  const reader = response.body!.getReader();
+  const first = new TextDecoder().decode((await reader.read()).value);
+  assert.match(first, /"stage":"connected"/);
+  const requestID = response.headers.get("x-astrabrowse-request-id")!;
+  assert.match(requestID, /^[a-f0-9-]{36}$/);
+  assert.ok(first.includes(requestID));
+  await reader.cancel();
+  assert.equal(app.compiles, 0);
+});
+
+test("known challenge artifacts are withheld and resolve replaces their manifest without deleting stored data", async () => {
+  const app = setup();
+  const output = fixtureOutput(source, start);
+  output.title = "Verifying your browser";
+  const key = await pageKeyFor(source);
+  const challenge = await createBundle(key, source, new Date(start).toISOString(), output);
+  const cached = await publishBundle(app.store, challenge, new Date(start).toISOString(), null);
+  assert.equal((await app.handle(request(`/pages/${key}/manifest`))).status, 422);
+  assert.equal((await app.handle(request(cached.manifest.bundleURL))).status, 422);
+  assert.equal((await app.handle(request(`/pages/${key}/revalidate`, {}))).status, 422);
+  const replacement = ready(await (await app.handle(request("/resolve", { url: source }))).text());
+  assert.equal(app.captures, 1);
+  assert.notEqual(replacement.manifest.bundleRevision, cached.manifest.bundleRevision);
+  assert.ok(await app.store.getBundle(cached.manifest.bundleRevision));
+});
+
+test("local workerd: a cancelled owner cannot strand a follower or its independent deadline", { timeout: 15_000 }, async () => {
+  // Synthetic I/O and request abort only: no Browser Run, model, R2, or source calls.
+  // Use the exact workerd/Miniflare/esbuild versions already pinned by Wrangler.
+  const { build } = await import("esbuild");
+  const { Miniflare } = await import("miniflare");
+  const routerPath = fileURLToPath(new URL("../src/router.ts", import.meta.url));
+  const storePath = fileURLToPath(new URL("../src/artifacts.ts", import.meta.url));
+  const fixturePath = fileURLToPath(new URL("../src/local-fixture.ts", import.meta.url));
+  const built = await build({ bundle: true, format: "esm", platform: "neutral", mainFields: ["module", "main"], external: ["node:*"], write: false, stdin: { resolveDir: fileURLToPath(new URL(".", import.meta.url)), sourcefile: "local-router-regression.ts", contents: `
+    import {createRouter} from ${JSON.stringify(routerPath)};
+    import {MemoryArtifactStore} from ${JSON.stringify(storePath)};
+    import {fixtureOutput} from ${JSON.stringify(fixturePath)};
+    let handle;
+    export default {fetch(request, env) {
+      if(new URL(request.url).searchParams.has('cancel')) {
+        const owner = new AbortController();
+        setTimeout(() => owner.abort(), 150);
+        request = new Request(request, {signal: owner.signal});
+      }
+      handle ??= createRouter({store: new MemoryArtifactStore(), deadlineMS: 1000, assertExecutionAllowed() {}, pipeline: {
+        async capture(sourceURL, {signal, onProgress}) {
+          onProgress({type: 'status', stage: 'test-io', message: 'Waiting for synthetic local I/O.'});
+          await env.IO.fetch('http://fixture.local/', {signal});
+          return {sourceURL, capturedAt: '2026-09-08T20:00:00Z'};
+        },
+        async compile(evidence) {return fixtureOutput(evidence.sourceURL, Date.parse(evidence.capturedAt));},
+        reextract() {throw Error('Unused fixture path');}
+      }});
+      return handle(request);
+    }};
+  ` } });
+  const mf = new Miniflare({ telemetry: { enabled: false }, workers: [{ config: {
+    name: "router-cancellation-fixture", type: "worker", compatibilityDate: "2026-09-08", compatibilityFlags: ["nodejs_compat"],
+    manifest: { mainModule: "index.mjs", modules: { "index.mjs": { type: "esm", contents: built.outputFiles[0]!.text } } },
+    env: { IO: { type: "fetcher", handler: async () => { await new Promise(resolve => setTimeout(resolve, 400)); return new Response("synthetic local I/O"); } } },
+  } }] });
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  try {
+    await mf.ready;
+    const body = JSON.stringify({ url: source });
+    const owner = await mf.dispatchFetch("http://local/resolve?cancel", { method: "POST", body });
+    const ownerText = owner.text();
+    const followerText = mf.dispatchFetch("http://local/resolve", { method: "POST", body }).then(response => response.text());
+    const texts = await Promise.race([
+      Promise.all([ownerText, followerText]),
+      new Promise<never>((_, reject) => { timeout = setTimeout(() => reject(new Error("Follower outlived the job deadline after its owner ended.")), 2000); }),
+    ]);
+    assert.match(texts[0]!, /"code":"CANCELLED"/);
+    assert.match(texts[1]!, /"code":"SHARED_CONVERSION_CANCELLED"/);
+    assert.doesNotMatch(texts[1]!, /event: ready/);
+  } finally {
+    if (timeout) clearTimeout(timeout);
+    await mf.dispose();
+  }
+});
+
+
+test("a follower joining during compilation never replays a closed Live View", async () => {
+  let beginCompilation!: () => void;
+  const compiling = new Promise<void>(resolve => { beginCompilation = resolve; });
+  let finishCompilation!: () => void;
+  const finish = new Promise<void>(resolve => { finishCompilation = resolve; });
+  const app = createRouter({ store: new MemoryArtifactStore(), assertExecutionAllowed() {}, pipeline: {
+    async capture(sourceURL, run) {
+      run.onProgress({ type: "liveView", url: "https://viewer.example.com/synthetic-closed-viewer" });
+      run.onProgress({ type: "status", stage: "captured", message: "Synthetic browser is closed." });
+      return { sourceURL, capturedAt: new Date(start).toISOString() };
+    },
+    async compile() { beginCompilation(); await finish; return fixtureOutput(source, start); },
+    reextract() { throw Error("Unused fixture path"); },
+  } });
+  const owner = await app(request("/resolve", { url: source }));
+  const ownerText = owner.text();
+  await compiling;
+  const follower = await app(request("/resolve", { url: source }));
+  const followerText = follower.text();
+  await new Promise(resolve => setTimeout(resolve, 5));
+  finishCompilation();
+  assert.match(await ownerText, /event: liveView/);
+  const replay = await followerText;
+  assert.doesNotMatch(replay, /event: liveView|synthetic-closed-viewer/);
+  ready(replay);
 });

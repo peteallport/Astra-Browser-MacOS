@@ -1,6 +1,6 @@
 # AstraBrowse backend
 
-The Worker implements streaming URL resolution, immutable A2UI bundles, conditional manifests, and source revalidation at [astrabrowse-backend.quirk.workers.dev](https://astrabrowse-backend.quirk.workers.dev). **Generated finance/HN bundles pass hosted shared-cache validation.** The latest unfamiliar IANA request failed before Live View, leaving current model credentials unverified. Finance revalidation returned 200 and a newer check time but unchanged content, failing the expected-change assertion. Local development remains cloud-disabled.
+The Worker implements streaming URL resolution, immutable A2UI bundles, conditional manifests, and source revalidation at [astrabrowse-backend.quirk.workers.dev](https://astrabrowse-backend.quirk.workers.dev). **Finance/HN shared-cache checks pass, and a fresh Wikipedia conversion completed in 42.7 seconds, passed artifact validation, and rendered in the native app.** Current Astra access is verified by that run; intermittent stream failures and the earlier finance expected-change assertion remain under investigation. Local development stays cloud-disabled.
 
 Read the [shared protocol](../docs/protocol.md), [planning source of truth](../planning.md), and [approved cloud activation record](../docs/cloud-change-proposal.md) before changing configuration.
 

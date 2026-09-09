@@ -46,7 +46,7 @@ npm run dev:fixture
 
 The fixture server uses `http://localhost:8787`. Configure that URL in the app’s Backend Settings. It accepts public HTTPS page identities but serves labeled local fixture data, without fetching those websites. The source webpage is `/demo/finance`.
 
-## Hosted verification and remaining evidence
+## Earlier hosted verification and remaining evidence
 
 Peter approved the listed cloud resources/configuration, deployment, and bounded live conversion/revalidation at approximately 4:40 p.m. Pacific on September 8. The private R2 bucket exists and the Worker is deployed at [astrabrowse-backend.quirk.workers.dev](https://astrabrowse-backend.quirk.workers.dev). Last recorded deployment: `10874f03-669f-4b59-9e2b-dc448bda805f`.
 
@@ -59,10 +59,24 @@ Peter approved the listed cloud resources/configuration, deployment, and bounded
 
 The finance recipe includes price, change, and the source snapshot footer; the cached footer remained `00:18:30Z`. The revalidation checker aborted at the failed changed-content assertion before saving. Therefore the local evidence file's `00:18:52Z` check time is the earlier checkpoint, not the newer server `sourceCheckedAt` observed in that response. Advancing a check timestamp does not establish refreshed content or a completed live-update demonstration.
 
-Earlier model integration attempts returned unified-route `7003` and provider-native alias `2040`. Peter later reported a duplicate-secret error after removing the visible gateway `default` entry; its underlying secret still exists. No secrets were deleted. Current provider credential usability remains unverified, and the documentation task inspected no credential values. Cached generated artifacts must not be presented as proof that a fresh model request currently works.
+Earlier model integration attempts returned unified-route `7003` and provider-native alias `2040`. Peter later reported a duplicate-secret error after removing the visible gateway `default` entry; its underlying secret still exists. No secrets were deleted. At that checkpoint, provider credential usability remained unverified, and the documentation task inspected no credential values. The later Wikipedia check below supersedes this uncertainty. Cached generated artifacts must not be presented as proof that a fresh model request currently works.
 
-Typecheck, 25 local tests, and production dry-run bundling pass. Remote Live View embedding, successful unfamiliar-domain conversion, a changing-content hosted refresh, generated-page native runtime acceptance, and comparative memory/speed measurements remain unverified. The macOS 14 scroll fallback compiled but was not runtime-tested.
+At this earlier checkpoint, typecheck, 25 local tests, and production dry-run bundling passed. Remote Live View embedding, successful unfamiliar-domain conversion, a changing-content hosted refresh, generated-page native runtime acceptance, and comparative memory/speed measurements remained unverified. The macOS 14 scroll fallback compiled but was not runtime-tested.
 
 The [activation record](cloud-change-proposal.md) preserves existing approval without requiring it again. Peter also explicitly authorized committing and pushing the current work; additional unapproved cloud operations, repository visibility changes, and hackathon submission remain separate.
 
 The dependency audit reports a Puppeteer transitive archive-extraction advisory; see the [backend dependency notes](../backend/README.md#current-limits-and-evidence). Local tests do not clear it.
+
+
+## September 8, 6:22 p.m. Pacific reliability investigation
+
+The reported native message, `The conversion stream ended before a result arrived`, means an HTTP-success SSE stream ended without a `ready` or `error` event. Expanded Swift parser tests preserve terminal events without final delimiters and distinguish a genuinely incomplete stream from malformed JSON; no native parser defect was reproduced.
+
+A controlled curl request for `https://en.wikipedia.org/wiki/Web_browser` completed through capture, Live View, Astra planning, compilation, validation, and `ready` in 42.7 seconds (HTTP 200). The Worker tail recorded `outcome: ok` with no exception. Its immutable artifact passed local bundle validation, exact revision verification, and `gpt-6-astra` provenance verification. Generation time was `2026-09-09T01:21:55.294Z`, revision `9228577c2139ce85e497bdd2a92c51078d406b7a6aef2c7e656cd44e660afbe0`. Retrying the existing Wikipedia tab then rendered that native page successfully. This supersedes earlier uncertainty about current model access, but does not establish the cause of every intermittent failure.
+
+Local workerd reproduction identified a separate shared-job lifecycle defect: disconnecting the request that owns a conversion can strand another waiting request beyond the configured job deadline. Browser inspection also found that `Verifying your browser` challenge pages could be accepted as content, and several browser operations/cleanup calls lacked individual bounded waits. The local fix keeps each request's I/O, timers, cancellation, and stream within that request; followers read bounded plain-data progress and have independent deadlines. Cancellation now delivers explicit terminal errors instead of stranding followers. Browser operations have bounded waits, original source errors survive cleanup failures, optional related-page failures preserve primary evidence, known verification pages are withheld from publication/cache delivery, and expired Live View results are not replayed. These changes have not been deployed; no cloud configuration or credentials were changed by this investigation.
+
+
+Final local verification passed: TypeScript typecheck, all 41 backend tests (including the reproduced cancellation case in local workerd), production dry-run bundling, Swift SSE regressions, the actual TypeScript-to-Swift protocol/refresh checks, and the macOS build. The native failure heading now says “Couldn't create a native view” instead of implying every transport failure requires the original site. These checks do not establish that every previously reported intermittent EOF has the same cause.
+
+Icon Composer verification found the open saved document at `Documents/ChatGPT/AstraBrowse/design/icon-composer/AstraBrowse.icon` byte-identical to the canonical repository's `AstraBrowse.icon` (13 files). Debug and Release already select `AstraBrowse` as the app icon and include the Icon Composer package as a resource. The fresh build contains compiled `Assets.car` and `AstraBrowse.icns`; its Info.plist selects `AstraBrowse`, and the compiled icon visually matches the saved design. The running app's system-provided icon (NSRunningApplication.icon, PID 85150) was also inspected and matches the saved design. No replacement artwork, target-setting change, or relaunch was needed; tabs and cache were preserved.

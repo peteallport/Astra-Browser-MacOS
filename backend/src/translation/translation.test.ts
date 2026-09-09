@@ -175,10 +175,10 @@ test("injected browser adapter closes its session and skips exploration during r
   assert.deepEqual(captured.captureProfile, { id: "public-desktop-v1", viewport: { width: 1280, height: 900 } });
 });
 
-test("browser cleanup failure is not reported as successful capture", async () => {
+test("browser cleanup failure preserves the original setup failure", async () => {
   const browser = { async close() { throw new Error("fixture cleanup failure"); }, async createBrowserContext() { throw new Error("fixture capture failure"); } } as unknown as Browser;
   const transport = createBrowserCaptureTransport({ fetch: async () => new Response() }, { gate: createCloudAccessGate(true), resolveDNS: async () => ["8.8.8.8"], launchBrowser: async () => browser });
-  await assert.rejects(transport.capture(new URL(evidence().sourceURL), { deadlineAt: Date.now() + 90_000 }), { code: "BROWSER_CLEANUP_FAILED" });
+  await assert.rejects(transport.capture(new URL(evidence().sourceURL), { deadlineAt: Date.now() + 90_000 }), { code: "BROWSER_SETUP_FAILED" });
 });
 
 test("upstream errors expose safe diagnostic codes but never raw provider messages", async () => {

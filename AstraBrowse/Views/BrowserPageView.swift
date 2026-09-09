@@ -113,7 +113,7 @@ struct BrowserPageView: View {
                     if tab.isLoading { ProgressView().controlSize(.large) }
                     else { Image(systemName: "globe.badge.chevron.backward").font(.largeTitle).foregroundStyle(.secondary) }
                     VStack(alignment: .leading, spacing: 6) {
-                        Text(tab.isLoading ? "Creating your native view" : "This page needs the original website")
+                        Text(tab.isLoading ? "Creating your native view" : "Couldn't create a native view")
                             .font(.title2.weight(.semibold))
                         Text(tab.stage).foregroundStyle(.secondary)
                     }
