@@ -1,4 +1,4 @@
-# Astra Browser for macOS
+# AstraBrowse for macOS
 
 A browser that transforms web pages into beautifully designed native interfaces.
 
