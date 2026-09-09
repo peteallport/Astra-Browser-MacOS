@@ -1,10 +1,15 @@
-# Astra Browser for macOS
+ <img width="100 " height="100" alt="image" src="https://github.com/user-attachments/assets/22d1da28-e776-4f29-a512-4ce3aa2c2f29" />
+ 
+# AstraBrowse for macOS
 
 A browser that transforms web pages into beautifully designed native interfaces.
 
 **🚫 No Invasive Ads · <img src="design/cookie-free.png" width="18" /> Cookie Banner Free · 📉 Memory Efficient · ⚡ Fast ·** 
 
 **🪄 Clean + Consistent UI/UX (DOM → Native UI) · 🔓 Open Source (Apache 2.0)**
+
+[<img width="1020" height="655" alt="image" src="https://github.com/user-attachments/assets/3425a08f-647e-48b2-854a-ef6d25e71137" />](https://www.youtube.com/embed/iOUCUWxhbsg?si=6MiM_eEzMn_hp-Uj)
+
 
 **Start with [planning.md](planning.md), the source of truth for the approved product, research, decisions, and current implementation boundary.**
 
