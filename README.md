@@ -2,9 +2,9 @@
 
 A browser that transforms web pages into beautifully designed native interfaces.
 
-🚫 No Invasive Ads · <img src="design/cookie-free.png" width="18" /> Cookie Banner Free · 📉 Memory Efficient · ⚡ Fast · 
+**🚫 No Invasive Ads · <img src="design/cookie-free.png" width="18" /> Cookie Banner Free · 📉 Memory Efficient · ⚡ Fast ·** 
 
-🪄 Clean + Consistent UI/UX (DOM → Native UI) · 🔓 Open Source (Apache 2.0)
+**🪄 Clean + Consistent UI/UX (DOM → Native UI) · 🔓 Open Source (Apache 2.0)**
 
 **Start with [planning.md](planning.md), the source of truth for the approved product, research, decisions, and current implementation boundary.**
 
