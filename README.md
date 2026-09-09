@@ -21,6 +21,13 @@ The goal is a faster, lighter browsing experience where the client receives stru
 
 News articles and feeds are potential first demonstrations of a broader idea: making the web feel as responsive and coherent as a native app.
 
+| Before | After |
+| --- | --- |
+| **Yehoooo! Finance**<br><img src="docs/screenshots/finance-before.png" alt="Yehoooo! Finance original website" width="480" /> | **Yehoooo! Finance**<br><img src="docs/screenshots/finance-after.png" alt="Yehoooo! Finance rendered as a native AstraBrowse interface" width="480" /> |
+| **Wikipedia — Web browser**<br><img src="docs/screenshots/wikipedia-before.png" alt="Wikipedia Web browser article on the original website" width="480" /> | **Wikipedia — Web browser**<br><img src="docs/screenshots/wikipedia-after.png" alt="Wikipedia Web browser article rendered as a native AstraBrowse interface" width="480" /> |
+
+Screenshots from the hackathon demonstration.
+
 ## Intended experience
 
 - Beautiful native macOS interfaces shaped around meaningful content.
@@ -35,7 +42,7 @@ The macOS app builds with the pinned A2UI-Swift renderer, streaming backend clie
 
 A fresh IANA reserved-domains conversion passed browser exploration, temporary Live View, Astra compilation, publication, and artifact validation; its validation stage arrived at 30.46 seconds. An earlier fresh Wikipedia conversion completed in 42.7 seconds and rendered in the native app. These are individual observations, not comparative performance benchmarks. Shared-cache checks passed for finance and Hacker News; the hosted finance changing-content assertion remains unresolved. See the [verification record](docs/local-verification.md).
 
-Deployment-specific addresses, account identifiers, resource names, and gateway aliases are placeholders in this checkout. There is no built-in hosted backend. Follow the setup below to use a local fixture or your own service.
+Deployment configuration uses placeholders for addresses, account identifiers, resource names, and gateway aliases. There is no built-in hosted backend. Follow the setup below to use a local fixture or your own service.
 
 ## Setup
 

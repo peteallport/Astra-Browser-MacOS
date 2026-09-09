@@ -1,6 +1,6 @@
 # Cloud configuration and deployment boundary
 
-Use the [backend setup guide](../backend/README.md) to configure your own deployment. The tracked `backend/wrangler.jsonc` is a reusable template for local development and safe dry-run packaging. Copy it to the ignored `backend/wrangler.deploy.jsonc`, then replace its placeholders with values for your account. The deploy command validates that private file before uploading. No demo account, endpoint, resource identifier, or credential alias is supplied in tracked documentation.
+Use the [backend setup guide](../backend/README.md) to configure your own deployment. The tracked `backend/wrangler.jsonc` is a reusable template for local development and safe dry-run packaging. Copy it to the ignored `backend/wrangler.deploy.jsonc`, then replace its placeholders with values for your account. The deploy command validates that private file before uploading. The configuration template supplies no demo account, endpoint, resource identifier, or credential alias. Demonstration screenshots retain their originally captured source addresses.
 
 ## Deployment values
 
