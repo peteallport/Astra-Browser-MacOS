@@ -1,9 +1,10 @@
-// Cloud resources and bounded live verification approved by Pete on September 8, 2026.
-// Default local development remains cloud-disabled; deploy with --env production.
+// Portable template: copy to ignored wrangler.deploy.jsonc and fill in your values.
+// Namespace 0 is a local-only placeholder; choose a unique positive integer for deployment.
+// Default local development stays cloud-disabled. See README.md for setup.
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "astrabrowse-backend",
-  "account_id": "7ab7b97c380400e3bccc5d148fe81474",
+  "name": "your-worker-name",
+  "account_id": "YOUR_CLOUDFLARE_ACCOUNT_ID",
   "main": "src/index.ts",
   "compatibility_date": "2026-09-08",
   "compatibility_flags": [
@@ -20,13 +21,13 @@
   "r2_buckets": [
     {
       "binding": "ARTIFACTS",
-      "bucket_name": "astrabrowse-artifacts"
+      "bucket_name": "your-r2-bucket-name"
     }
   ],
   "ratelimits": [
     {
       "name": "RESOLVE_RATE_LIMITER",
-      "namespace_id": "2026090801",
+      "namespace_id": "0",
       "simple": {
         "limit": 10,
         "period": 60
@@ -35,25 +36,25 @@
   ],
   "vars": {
     "CLOUD_EXECUTION_APPROVED": "false",
-    "AI_GATEWAY_ID": "astrabrowse-demo-gateway",
-    "AI_GATEWAY_BYOK_ALIAS": "openai-astrabrowse-demo"
+    "AI_GATEWAY_ID": "YOUR_AI_GATEWAY_ID",
+    "AI_GATEWAY_BYOK_ALIAS": "YOUR_AI_GATEWAY_BYOK_ALIAS"
   },
   "env": {
     "production": {
-      "name": "astrabrowse-backend",
+      "name": "your-worker-name",
       "browser": {
         "binding": "BROWSER"
       },
       "r2_buckets": [
         {
           "binding": "ARTIFACTS",
-          "bucket_name": "astrabrowse-artifacts"
+          "bucket_name": "your-r2-bucket-name"
         }
       ],
       "ratelimits": [
         {
           "name": "RESOLVE_RATE_LIMITER",
-          "namespace_id": "2026090801",
+          "namespace_id": "0",
           "simple": {
             "limit": 10,
             "period": 60
@@ -65,8 +66,8 @@
       },
       "vars": {
         "CLOUD_EXECUTION_APPROVED": "true",
-        "AI_GATEWAY_ID": "astrabrowse-demo-gateway",
-        "AI_GATEWAY_BYOK_ALIAS": "openai-astrabrowse-demo"
+        "AI_GATEWAY_ID": "YOUR_AI_GATEWAY_ID",
+        "AI_GATEWAY_BYOK_ALIAS": "YOUR_AI_GATEWAY_BYOK_ALIAS"
       }
     }
   }

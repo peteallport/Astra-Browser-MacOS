@@ -10,9 +10,9 @@ struct BackendSettingsView: View {
         VStack(alignment: .leading, spacing: 18) {
             Text("Backend Settings").font(.title2.weight(.semibold))
             Text("Connect to your self-hosted AstraBrowse service.").foregroundStyle(.secondary)
-            TextField("http://localhost:8787", text: $address).textFieldStyle(.roundedBorder)
+            TextField("https://your-backend.example", text: $address).textFieldStyle(.roundedBorder)
                 .accessibilityLabel("Backend URL")
-            Text("Use HTTPS for a hosted service, or HTTP localhost for local development.")
+            Text("Enter the URL from your backend deployment. For local development, use http://localhost:8787.")
                 .font(.caption).foregroundStyle(.secondary)
             if let error { Text(error).font(.caption).foregroundStyle(.red) }
             HStack {
@@ -22,6 +22,7 @@ struct BackendSettingsView: View {
                     do { try browser.saveBackend(address.trimmingCharacters(in: .whitespacesAndNewlines)); dismiss() }
                     catch { self.error = error.localizedDescription }
                 }.keyboardShortcut(.defaultAction)
+                    .disabled(address.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
         }
         .padding(24).frame(width: 460)

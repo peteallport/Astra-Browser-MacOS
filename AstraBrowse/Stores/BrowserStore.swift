@@ -5,7 +5,6 @@ import A2UISwiftCore
 @MainActor
 @Observable
 final class BrowserStore {
-    static let defaultBackendAddress = "https://astrabrowse-backend.quirk.workers.dev"
     var tabs: [BrowserTab] = []
     var selectedTabID: BrowserTab.ID?
     var address = ""
@@ -17,7 +16,7 @@ final class BrowserStore {
 
     init() {
         backendAddress = ProcessInfo.processInfo.environment["ASTRABROWSE_BACKEND_URL"]
-            ?? UserDefaults.standard.string(forKey: "backendAddress") ?? Self.defaultBackendAddress
+            ?? UserDefaults.standard.string(forKey: "backendAddress") ?? ""
         for saved in cache.loadTabs().prefix(20) {
             let tab = BrowserTab(id: saved.id, title: saved.title, url: saved.url)
             tab.scrollOffset = max(0, saved.scrollOffset ?? 0)
@@ -33,6 +32,7 @@ final class BrowserStore {
     }
 
     var selectedTab: BrowserTab? { tabs.first { $0.id == selectedTabID } }
+    var isBackendConfigured: Bool { (try? BackendClient(address: backendAddress)) != nil }
 
     func newTab() {
         let tab = BrowserTab()
@@ -151,7 +151,7 @@ final class BrowserStore {
     func maintain() async {
         while !Task.isCancelled {
             do { try await Task.sleep(for: .seconds(15)) } catch { return }
-            guard isActive else { continue }
+            guard isActive, isBackendConfigured else { continue }
             let ordered = tabs.sorted { $0.id == selectedTabID && $1.id != selectedTabID }
             for tab in ordered.prefix(8) where tab.page != nil && !tab.isLoading && !tab.showsOriginal {
                 guard isActive, !Task.isCancelled else { break }
@@ -166,6 +166,13 @@ final class BrowserStore {
 
     private func resolve(_ tab: BrowserTab) {
         guard let url = tab.url else { return }
+        guard isBackendConfigured else {
+            tab.isLoading = false
+            tab.liveViewURL = nil
+            tab.stage = "Backend setup required"
+            tab.error = "Set your backend URL in Backend Settings to create a native view."
+            return
+        }
         tasks[tab.id]?.cancel()
         let token = UUID(); tab.navigationID = token
         tab.isLoading = true; tab.error = nil; tab.refreshWarning = nil; tab.stage = "Connecting to conversion service…"

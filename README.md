@@ -33,44 +33,68 @@ News articles and feeds are potential first demonstrations of a broader idea: ma
 
 The macOS app builds with the pinned A2UI-Swift renderer, streaming backend client, local cache, filtering, and native update handling. The TypeScript backend implements bounded capture/compilation adapters, immutable artifacts, conditional manifests, and revalidation. The shared wire format is documented in [docs/protocol.md](docs/protocol.md).
 
-The backend is deployed at [astrabrowse-backend.quirk.workers.dev](https://astrabrowse-backend.quirk.workers.dev), with private R2 storage and AI Gateway. **A fresh IANA reserved-domains conversion passed after the approved Workers Paid upgrade, reaching validation in 30.46 seconds and then returning a valid published bundle.** Browser exploration, temporary Live View, Astra compilation, and exact artifact/provenance checks all passed. This is an observed validation-stage time, not a full end-to-end benchmark.
+A fresh IANA reserved-domains conversion passed browser exploration, temporary Live View, Astra compilation, publication, and artifact validation; its validation stage arrived at 30.46 seconds. An earlier fresh Wikipedia conversion completed in 42.7 seconds and rendered in the native app. These are individual observations, not comparative performance benchmarks. Shared-cache checks passed for finance and Hacker News; the hosted finance changing-content assertion remains unresolved. See the [verification record](docs/local-verification.md).
 
-Finance and Hacker News reopen from validated shared snapshots; an earlier fresh Wikipedia conversion completed in 42.7 seconds and rendered in the macOS app. The stream/browser reliability fixes remain deployed. The earlier Browser Run HTTP 429 observations were on Workers Free; Pete subsequently completed the $5/month plus usage upgrade, and Cloudflare confirmed Workers Paid active. The finance changing-content assertion remains unresolved. See [planning.md](planning.md) and [verification evidence](docs/local-verification.md).
+Deployment-specific addresses, account identifiers, resource names, and gateway aliases are placeholders in this checkout. There is no built-in hosted backend. Follow the setup below to use a local fixture or your own service.
 
-**Authorized cloud scope:** Peter approved the listed resources, production configuration and deployment, one bounded live conversion, and one revalidation on September 8. That approval remains in force for this integration; subsequent reliability deployments and the Workers Paid upgrade were also explicitly approved. Additional resource changes or operations beyond the approved scope require separate confirmation; see the [activation record](docs/cloud-change-proposal.md).
+## Setup
 
-## Run the macOS app
+### Requirements
 
-Open [AstraBrowse.xcodeproj](AstraBrowse.xcodeproj) in Xcode, or run:
+- macOS 14 or newer and Xcode with Swift 6.2 or newer. Local ad-hoc signing does not require an Apple Developer membership.
+- Node.js 24 or newer and npm for the backend. Dependency versions are pinned in the lockfiles.
+- For live conversion: a Cloudflare account with R2, Browser Run, and AI Gateway, plus an OpenAI provider key with access to `gpt-6-astra`. See the [Cloudflare setup guide](backend/README.md#cloudflare-setup).
+
+### Try the app locally
+
+Start the fixture server from the repository root:
+
+```sh
+cd backend
+npm ci
+npm run dev:fixture
+```
+
+In a second terminal at the repository root:
 
 ```sh
 ./script/build_and_run.sh
 ```
 
-Command-T opens a tab; Command-L focuses the address field. The Codex Run action uses the same script. It builds with local ad-hoc signing, so an Apple Developer membership is not required. The resolved Swift packages require Swift 6.2 or newer. The deployment target is macOS 14+.
+On first launch, **Backend Settings** opens. Enter `http://localhost:8787`, select **Save**, then open a public HTTPS website address. The server returns a prominently labeled **LOCAL TEST FIXTURE** with hand-authored layout and simulated finance quotes. It exercises the native/API contract without fetching or converting the entered website and needs no Cloudflare account or API key.
 
-Build products go to temporary DerivedData outside the source checkout. `ASTRABROWSE_BUILD_DIR` overrides that location. This script does not produce a notarized distribution package.
+Command-T opens a tab; Command-L focuses the address field. You can also open [AstraBrowse.xcodeproj](AstraBrowse.xcodeproj) in Xcode. The Codex Run action uses the same script. Build-only mode is `./script/build_and_run.sh --build-only`; build products go to temporary DerivedData outside the checkout, configurable with `ASTRABROWSE_BUILD_DIR`.
 
-## Backend development
+### Connect your own backend
 
-Use Node.js 24 or newer:
+Follow the [backend setup guide](backend/README.md#cloudflare-setup) to provision and deploy your service. It uses a private copy of the [Wrangler template](backend/wrangler.jsonc):
 
 ```sh
 cd backend
-npm ci
-npm run typecheck
-npm test
-npm run deploy:dry-run
-npm run dev
+cp -n wrangler.jsonc wrangler.deploy.jsonc
 ```
 
-For a completely local native/API check, run `npm run dev:fixture` **instead of** `npm run dev`. In the app’s Backend Settings, use `http://localhost:8787`, then enter a public HTTPS URL. The server returns a prominently labeled hand-authored fixture with simulated finance quotes; it does not fetch or convert that website. The fixture exercises the real extraction, validation, caching, and content-delivery contracts without cloud access.
+Fill in the placeholders in **`backend/wrangler.deploy.jsonc`**, which is ignored by Git. Keep the checked-in template unchanged. Your values include the Cloudflare account ID, Worker and R2 bucket names, rate-limiter namespace, gateway ID, and BYOK credential alias. The OpenAI key itself goes into AI Gateway's **Provider Keys**, backed by Secrets Store. See [Cloudflare's BYOK setup](https://developers.cloudflare.com/ai-gateway/configuration/bring-your-own-keys/).
 
-The health endpoint is `/health`. A healthy process does not establish successful model generation. Default local development remains cloud-disabled; the approved `production` environment enables cloud bindings. `npm run deploy` and `npm run deploy:dry-run` target that production environment, with only the former making a deployment.
+After deployment, open the app's **Backend Settings**, enter your Worker HTTPS URL, and select **Save**. For example, `https://YOUR_WORKER.YOUR_SUBDOMAIN.workers.dev` describes the URL format; replace it with the address printed by Wrangler. The app stores this URL locally. Existing saved settings remain supported; a process-level `ASTRABROWSE_BACKEND_URL` override takes precedence for development. No URL or provider key needs to be compiled into the app.
 
-Use the [backend setup guide](backend/README.md) and [local configuration example](backend/.dev.vars.example) for Cloudflare resources and settings. Keep credentials in ignored local secret files or Cloudflare secrets, never in the Mac app or source control. No cloud resources are provisioned merely by checking out this repository or running a deployment dry run.
+### Configuration and verification
 
-The intended hosted deployment uses a Worker, Browser Run, R2, and AI Gateway's OpenAI Responses route. The planning document maps these to generic HTTP, Chromium/CDP, object storage, and model-provider interfaces for future alternative infrastructure adapters.
+| Location | Contents |
+| --- | --- |
+| `backend/wrangler.jsonc` | Checked-in placeholders, portable bindings, and behavior defaults |
+| `backend/wrangler.deploy.jsonc` | Ignored account-specific deployment configuration |
+| `backend/.dev.vars` | Optional ignored local overrides; start from [.dev.vars.example](backend/.dev.vars.example) |
+| Cloudflare AI Gateway / Secrets Store | Actual OpenAI provider key |
+| App → Backend Settings | Your backend URL, saved on your Mac |
+
+From `backend`, run `npm run typecheck`, `npm test`, and `npm run deploy:dry-run`. The dry run bundles the placeholder production template locally and uploads nothing. `npm run deploy:check` checks your private file for leftover placeholders; `npm run deploy -- --dry-run` additionally validates and bundles that private configuration without deploying. **`npm run deploy` performs a real deployment.**
+
+`npm run dev` starts a local Wrangler server with cloud conversion disabled; `/health` and `/demo/finance` work, while `/resolve` returns `CLOUD_APPROVAL_REQUIRED`. Use it instead of the fixture server when working on the Worker. Neither a health check nor a dry run verifies model access. CI uses only local checks and has no deployment credentials.
+
+The deployed demo API has no client authentication. Its rate limiter reduces request volume but is not a global spending cap; hosting a public endpoint permits others to trigger your browser/model usage. The cloud execution flag is a server-side enablement setting, not an API credential.
+
+Removing deployment values from the current files does not remove them from earlier Git commits. Do not commit filled configuration, credentials, live session URLs, or private logs.
 
 ## License
 

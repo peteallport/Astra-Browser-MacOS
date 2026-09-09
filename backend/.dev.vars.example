@@ -1,11 +1,8 @@
-# Optional local settings. Copy to ignored .dev.vars only if overrides are needed.
-# Local development must stay cloud-disabled; production settings are separate.
+# Optional local overrides; copy to ignored .dev.vars only if needed.
+# Local development stays cloud-disabled. Production uses wrangler.deploy.jsonc.
 CLOUD_EXECUTION_APPROVED=false
-AI_GATEWAY_ID=astrabrowse-demo-gateway
-AI_GATEWAY_BYOK_ALIAS=openai-astrabrowse-demo
-# Cached generated artifacts are verified. The latest cold conversion failed,
-# so current provider access remains unverified after the duplicate-secret issue.
-# No secrets were deleted; do not remove existing secrets without authorization.
-# Provider credentials live in AI Gateway BYOK, not here or in the native app.
-# The selected automatically authenticated AI binding requires no CF_AIG_TOKEN
-# or OPENAI_API_KEY in this example. Never commit real credentials.
+AI_GATEWAY_ID=YOUR_AI_GATEWAY_ID
+AI_GATEWAY_BYOK_ALIAS=YOUR_AI_GATEWAY_BYOK_ALIAS
+# The OpenAI provider key belongs in Cloudflare AI Gateway BYOK / Secrets Store.
+# The Worker authenticates through its AI binding; no OpenAI API key or
+# Cloudflare API token belongs in this file, the native app, or source control.

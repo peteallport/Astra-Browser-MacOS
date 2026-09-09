@@ -1,14 +1,10 @@
 # AstraBrowse backend
 
-The Worker implements streaming URL resolution, immutable A2UI bundles, conditional manifests, and source revalidation at [astrabrowse-backend.quirk.workers.dev](https://astrabrowse-backend.quirk.workers.dev). **After Pete completed the approved Workers Paid upgrade, a fresh IANA conversion passed browser exploration, Astra compilation, publication, and exact artifact/provenance validation.** Its validation stage arrived at 30.46 seconds, followed by ready. Finance/HN shared-cache checks and an earlier fresh Wikipedia conversion also passed; Wikipedia rendered in the native app.
-
-The reliability fixes are deployed with unchanged bindings and credentials. Cloudflare confirmed Workers Paid active at $5/month plus usage; the earlier HTTP 429 failures were observed before that upgrade. The finance expected-change assertion remains unresolved. Local development stays cloud-disabled.
-
-Read the [shared protocol](../docs/protocol.md), [planning source of truth](../planning.md), and [approved cloud activation record](../docs/cloud-change-proposal.md) before changing configuration.
+The TypeScript Worker provides streaming URL resolution, immutable A2UI bundles, conditional manifests, and source revalidation. The repository contains deployment placeholders; use a private configuration for your own Cloudflare account. Start with the [root setup guide](../README.md#setup), [protocol](../docs/protocol.md), and [planning document](../planning.md).
 
 ## Local development
 
-Use Node.js 24 or newer for the built-in TypeScript test and fixture commands. From this directory:
+Use Node.js 24 or newer. From this directory:
 
 ```sh
 npm ci
@@ -18,27 +14,104 @@ npm run deploy:dry-run
 npm run dev
 ```
 
-`npm run dev` starts Wrangler with local bindings. With the checked-in configuration, `/health` and `/demo/finance` work and `/resolve` emits `CLOUD_APPROVAL_REQUIRED`. No binding is read or invoked by the default router. Do not enable remote bindings to run local tests.
+`npm run dev` uses local bindings with cloud conversion disabled. `/health` and `/demo/finance` work; `/resolve` returns `CLOUD_APPROVAL_REQUIRED`. The default router never invokes the R2, browser, or model bindings. Keep `CLOUD_EXECUTION_APPROVED=false` for local development.
 
-To exercise the native client’s real HTTP contract without any external service, use this command instead of `npm run dev`:
+For a native/API check with no external services, stop Wrangler and run:
 
 ```sh
 npm run dev:fixture
 ```
 
-It binds only `127.0.0.1:8787`; set `LOCAL_FIXTURE_PORT` to select another port. Set the native app backend to `http://localhost:8787` and resolve a valid HTTPS URL. The response prominently identifies itself as **LOCAL TEST FIXTURE**, with hand-authored layout and synthetic finance content. It is not an Astra conversion or a recorded live result. The fixture serves the same bundle, ETag, and revalidation protocol as the Worker, with no cloud or source network access. Stop one server before starting the other on the same port.
+The fixture binds to `127.0.0.1:8787`; `LOCAL_FIXTURE_PORT` selects another port. In the native app's **Backend Settings**, enter `http://localhost:8787`, save, and open a public HTTPS address. The result is explicitly labeled **LOCAL TEST FIXTURE**, with a hand-authored layout and simulated finance content. It does not fetch or convert the entered website. It exercises the same bundle, ETag, revalidation, and native caching protocol as the Worker.
+
+## Cloudflare setup
+
+These steps create resources and can incur charges in **your** account. Checking out the repository, local tests, and dry runs do not provision them.
+
+### 1. Prepare access and private configuration
+
+Install dependencies, then authenticate Wrangler:
+
+```sh
+npm ci
+npx wrangler login
+npx wrangler whoami
+cp -n wrangler.jsonc wrangler.deploy.jsonc
+```
+
+`cp -n` preserves an existing private file. Edit only `wrangler.deploy.jsonc` when filling in deployment values. Both it and local `.dev.vars` / `.env` files are ignored by Git. Never put provider keys or Cloudflare access tokens in the template, app source, or checked-in examples.
+
+Replace **every occurrence**, including values under `env.production`:
+
+| Template value | Replacement |
+| --- | --- |
+| `YOUR_CLOUDFLARE_ACCOUNT_ID` | Your Cloudflare account ID from the dashboard or `wrangler whoami` |
+| `your-worker-name` | Your chosen Worker name, using letters, numbers, and hyphens |
+| `your-r2-bucket-name` | The private R2 bucket you create below |
+| `namespace_id: "0"` | A positive integer written as a string, unique to this rate limiter within your account |
+| `YOUR_AI_GATEWAY_ID` | The ID of your AI Gateway in the same account |
+| `YOUR_AI_GATEWAY_BYOK_ALIAS` | The exact alias of the OpenAI provider key saved in that gateway |
+
+The namespace value `0` is a numeric placeholder for local tooling. Keep the logical binding names `ARTIFACTS`, `BROWSER`, `AI`, and `RESOLVE_RATE_LIMITER`; the code uses these names. The 10-request/60-second rate limit, compatibility date, and cloud execution flags are portable behavior defaults, not account identifiers. Top-level local execution stays `false`; the production environment enables it.
+
+### 2. Prepare the cloud resources
+
+| Resource | Setup |
+| --- | --- |
+| Worker | `npm run deploy` creates or updates the Worker named in your private production configuration |
+| Private R2 bucket | Enable R2 and create the bucket in the [Cloudflare dashboard](https://dash.cloudflare.com/); use that name for `ARTIFACTS`. Keep public bucket access disabled |
+| Browser Run | Confirm your account has Browser Run access and sufficient [quota](https://developers.cloudflare.com/browser-run/limits/). The `BROWSER` binding is declared in the configuration; there is no separate browser server to manage |
+| AI Gateway | Create an authenticated gateway in the same account and configure the OpenAI provider key as described below |
+| Rate limiter | Choose an unused positive namespace ID for the declared binding; no KV or database is required |
+
+No D1, KV, Cron Schedule, Durable Object, queue, or public R2 domain is needed. The app initiates refresh checks while active. See the [Browser Run binding](https://developers.cloudflare.com/browser-run/reference/wrangler/) and [rate-limit binding](https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/) documentation.
+
+### 3. Store the OpenAI provider key
+
+In Cloudflare, select **AI → AI Gateway → your gateway → Provider Keys**. Add an **OpenAI** API key whose project has access to `gpt-6-astra`, and record the saved credential alias in your private `AI_GATEWAY_BYOK_ALIAS` setting. Ensure gateway authentication is enabled. AI Gateway stores the actual provider key in Secrets Store; the dashboard manages the underlying secret. See [BYOK setup and aliases](https://developers.cloudflare.com/ai-gateway/configuration/bring-your-own-keys/).
+
+The implementation uses `env.AI.gateway(env.AI_GATEWAY_ID).run(...)` with the provider-native `openai` / `responses` envelope and the outer `cf-aig-byok-alias` header. The Worker's `AI` binding handles Cloudflare authentication. There is no `OPENAI_API_KEY` or `CF_AIG_TOKEN` to add to this app or Worker configuration. The model is `gpt-6-astra` with low reasoning effort and schema-constrained output; a successful deployment does not establish that your provider account has model access.
+
+The gateway ID is a name, not a URL. The native app connects to your **Worker URL**, not the AI Gateway API URL. See the implementation in [astra.ts](src/translation/astra.ts) and the [OpenAI provider route](https://developers.cloudflare.com/ai-gateway/usage/providers/openai/).
+
+### 4. Validate, then deploy
+
+```sh
+npm run deploy:check
+npm run deploy -- --dry-run
+```
+
+The first command checks that the private file exists and has no template placeholders. The second invokes Wrangler against that private file to validate and bundle it without uploading. Both commands are local checks; neither confirms cloud resource existence, credentials, or successful conversion.
+
+When the configuration and resources are ready, publish the Worker:
+
+```sh
+npm run deploy
+```
+
+This command uses **`wrangler.deploy.jsonc --env production`**. It refuses missing or unfilled private configuration. Do not deploy the checked-in template directly. The deployment output prints your Worker URL, in the form `https://YOUR_WORKER.YOUR_SUBDOMAIN.workers.dev`.
+
+### 5. Connect and verify
+
+Enter the printed HTTPS URL in the native app's **Backend Settings** and save it. Open a public source such as `https://www.iana.org/domains/reserved`. A successful cold conversion should show progress and end with a native view; opening it again should reuse the cached bundle. Visit your Worker's `/demo/finance` path as a source to try simulated quote updates.
+
+`/health` verifies only that the process responds. A terminal `ready` event and validated published artifact establish a successful conversion. Troubleshooting and known acceptance gaps are recorded in [local-verification.md](../docs/local-verification.md).
+
+## Command reference
 
 | Command | Purpose |
 | --- | --- |
-| `npm run dev` | Local Wrangler server; external execution disabled by default |
+| `npm run dev` | Local Wrangler server, cloud conversion disabled |
 | `npm run dev:fixture` | Local protocol fixture for native integration |
+| `npm run types` | Regenerate checked-in types from the public template; do not point this command at private config |
 | `npm run typecheck` | TypeScript verification |
-| `npm test` | Local router, publication, extraction, compiler, policy, and injected transport tests |
-| `npm run deploy:dry-run` | Bundle the `production` environment locally into ignored `dist/`; no deployment |
-| `npm run types` | Regenerate types after an approved configuration change |
-| `npm run deploy` | Deploy the approved `production` environment |
+| `npm test` | Local router, publication, extraction, compiler, policy, and transport tests |
+| `npm run deploy:dry-run` | Bundle the placeholder production template into ignored `dist/`, without account setup or upload |
+| `npm run deploy:check` | Check private deployment configuration for missing values, without cloud access |
+| `npm run deploy -- --dry-run` | Validate and bundle private configuration without upload |
+| `npm run deploy` | Deploy private production configuration to Cloudflare |
 
-Wrangler may need local filesystem and loopback-listener permission. A writable `WRANGLER_LOG_PATH` avoids its default user log directory. Generated binding types reflect the current declarations only; they do not verify hosted resources. Inspect generated types before committing them, and never include credentials.
+Wrangler may need local filesystem and loopback-listener permission. `WRANGLER_LOG_PATH` can select a writable log location. Inspect generated types before committing them; the public template prevents your deployment values becoming generated literal types. The [Wrangler CLI](https://developers.cloudflare.com/workers/wrangler/commands/) documents `--config` and `--dry-run`.
 
 ## Implemented contract
 
@@ -47,47 +120,20 @@ Wrangler may need local filesystem and loopback-listener permission. A writable 
 | `GET /health`, `HEAD /health` | Implemented features, execution mode, and explicitly unverified cloud readiness |
 | `POST /resolve` | `{url}` request; SSE `status`, transient `liveView`, and terminal `ready` or `error` |
 | `GET /pages/:key/manifest` | Current manifest with ETag and conditional 304 |
-| `POST /pages/:key/revalidate` | JSON `{manifest,changed}`; recent source checks reuse the prior result |
+| `POST /pages/:key/revalidate` | JSON `{manifest,changed}`; recent checks reuse the prior result |
 | `GET /artifacts/:revision` | Validated immutable bundle with content-based identity |
 | `GET /demo/finance` | Public source HTML with clearly labeled simulated quotes changing every 30 seconds |
 
-Resolution has a 90-second total deadline. Concurrent requests for the same page share plain-data progress within one Worker isolate. I/O belongs to the initiating request; cancelling that owner aborts its work and gives followers a terminal cancellation error. Cancelling only a follower leaves the owner running. A complete validated bundle is persisted before a conditional manifest write makes it discoverable. A failed conversion or refresh preserves the prior valid manifest.
+Resolution has a 90-second total deadline. Concurrent requests for the same page share progress within one Worker isolate. I/O belongs to the initiating request; cancelling that owner aborts its work and gives followers a terminal cancellation error. Cancelling only a follower leaves the owner running. A validated bundle is persisted before a conditional manifest write publishes it. Failed conversions and refreshes preserve the prior valid manifest.
 
-Source revalidation defaults to 60 seconds. It reuses the stored extraction recipe, skips the Astra exploration planner, and makes no model call while that recipe remains compatible. A required-field/list mismatch or invalid selector triggers a bounded repair compilation from the new capture. An unchanged content hash advances `sourceCheckedAt` while preserving the bundle revision. Native clients poll manifests every 15 seconds and decide when to apply pending content.
+Source revalidation defaults to 60 seconds. It reuses the extraction recipe and makes no model call while that recipe remains compatible; extraction incompatibility triggers bounded repair compilation. Unchanged content advances freshness without changing the bundle revision. Native clients poll manifests every 15 seconds and decide when to apply pending content.
 
-## Cloud adapter and activation gate
+## Limits and configuration privacy
 
-The production environment includes the Worker’s automatically authenticated `AI` binding. Latest deployment `e031dfdb-bac7-4b53-bb12-98cf4c09f0a4` retains the provider-native Responses envelope and outer alias header:
+The public Worker API has **no client authentication**. Anyone with its URL can request a conversion. The rate limiter is approximate and local to a Cloudflare location, so it is not a global spending cap. `CLOUD_EXECUTION_APPROVED` enables server-side cloud execution; it does not authenticate callers.
 
-```ts
-env.AI.gateway("astrabrowse-demo-gateway").run({
-  provider: "openai",
-  endpoint: "responses",
-  headers: { "Content-Type": "application/json" },
-  query: { model: "gpt-6-astra", ...responsesInput },
-}, {
-  gateway: { skipCache: true, retries: { maxAttempts: 1 } },
-  extraHeaders: { "cf-aig-byok-alias": "openai-astrabrowse-demo" },
-  signal,
-});
-```
+There is no durable job queue or global single-compilation guarantee. Streaming work needs an active client connection. R2 conditional writes prevent stale manifest overwrites. Only public HTTPS pages are supported; destination/DNS checks do not constitute complete egress hardening. Authentication, private sessions, forms, and access-control bypass are unsupported. Temporary Live View URLs never belong in stored artifacts or committed logs.
 
-Earlier unified routing failed with HTTP 404 / code `7003`, followed by provider-native gateway `2040` responses requesting `default`. Generated finance/HN artifacts subsequently passed shared-cache validation. Peter reported a duplicate `default` secret after removing its visible gateway entry; the underlying secret still exists, and no secrets were deleted. An earlier IANA request failed with `CONVERSION_FAILED` before Live View; later fresh Wikipedia and post-upgrade IANA conversions verified current provider access. Do not delete or replace secrets based on the duplicate error. No key value belongs in the app, repository, or verification output.
+The [verification record](../docs/local-verification.md) retains observed conversion outcomes and known gaps without publishing deployment identifiers. Removing values from current source does not erase them from Git history. Keep private configuration and logs out of commits.
 
-The approved `production` environment has `AI`, `BROWSER`, private R2 `ARTIFACTS` bound to `astrabrowse-artifacts`, and `RESOLVE_RATE_LIMITER` using namespace `2026090801` at 10 requests per 60 seconds. Its gateway ID is `astrabrowse-demo-gateway`; the verified nonsecret BYOK alias is `openai-astrabrowse-demo`. The bucket has been created and the Worker deployed. The top-level local environment has `CLOUD_EXECUTION_APPROVED=false`; production sets it to `true`. The previous account/auth-mode/model placeholders were removed, and the BYOK alias now has an explicit purpose in provider-native routing.
-
-The earlier R2 activation error is resolved: Peter enabled R2, approved the listed cloud changes, and the private artifact bucket was created. Latest deployment version: `e031dfdb-bac7-4b53-bb12-98cf4c09f0a4`. Resource creation and successful browser capture do not establish successful model generation or artifact publication.
-
-Only `CLOUD_EXECUTION_APPROVED=true` selects the cloud router. Every R2 operation and browser/model/DNS transport checks this runtime gate. Peter's September 8 approval covers the listed resources/configuration, deployment, one bounded live conversion, and one revalidation. Keep that existing approval distinct from additional resource changes or operations beyond its scope, which require confirmation. See the [activation record](../docs/cloud-change-proposal.md).
-
-See Cloudflare’s [AI binding guidance](https://developers.cloudflare.com/ai-gateway/usage/providers/workersai/), [BYOK](https://developers.cloudflare.com/ai-gateway/configuration/bring-your-own-keys/), [Browser Run configuration](https://developers.cloudflare.com/browser-run/reference/wrangler/), and [rate-limit binding documentation](https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/).
-
-## Current limits and evidence
-
-The local suite covers publication, immutable identity, ETags, coalescing, cancellation, freshness, repair, URL policy, extraction, and injected model behavior. Typecheck, all 44 backend tests, and production dry-run bundling pass for the unchanged implementation. The latest redeployment changed no code or bindings, so those checks were not rerun solely for the billing change. Hosted finance/HN cache results validate model provenance and artifact hashes. Finance revalidation passed HTTP/schema/spec/recipe/generation checks and advanced `sourceCheckedAt`, but returned `changed: false` with unchanged content; the expected-change assertion failed. Its local state file remains at the prior `00:18:52Z` checkpoint because the checker stopped before saving. See the [verification record](../docs/local-verification.md).
-
-There is no durable job queue or global single-compilation guarantee. Streaming work depends on an active client connection. Rate limits are approximate and local to a Cloudflare location; the configured 10 requests per 60 seconds is not a global spending cap. R2 conditional writes prevent a stale publisher replacing a newer manifest, even when separate isolates duplicate work.
-
-Only public HTTPS pages are supported. The acquisition adapter checks URL/redirect/request destinations and public DNS results; it does not claim complete DNS-rebinding protection without pinned egress. No private sessions, authentication, forms, payment actions, or access-control bypass are supported. Live View URLs are ephemeral progress events and are never published in bundles or manifests. Layout rendering uses the constrained A2UI catalog understood by the native client.
-
-Runtime dependencies are pinned `@cloudflare/puppeteer` and `linkedom`. The Puppeteer dependency tree currently reports `extract-zip` archive-extraction advisories; the Worker uses the remote Browser Run transport and does not invoke browser download/archive extraction APIs. This does not clear the dependency advisory. The `sharp` development override remains pinned to `0.35.4` for its earlier advisory; dependency changes should be reviewed rather than applying automatic major downgrades.
+Runtime dependencies are pinned `@cloudflare/puppeteer` and `linkedom`. The Puppeteer dependency tree has reported `extract-zip` archive-extraction advisories; the Worker uses remote Browser Run rather than browser download/archive extraction APIs. This does not clear that advisory. The `sharp` development override remains pinned to `0.35.4`; dependency changes need separate review.

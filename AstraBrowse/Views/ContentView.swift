@@ -14,10 +14,14 @@ struct ContentView: View {
             VStack(spacing: 0) {
                 addressBar
                 Divider()
+                if !browser.isBackendConfigured { backendSetupPrompt }
                 if let tab = browser.selectedTab, tab.url != nil {
                     BrowserPageView(browser: browser, tab: tab).id(tab.id)
                 } else {
-                    PlaceholderPageView(open: browser.open)
+                    PlaceholderPageView { website in
+                        browser.address = website
+                        prepareAddress()
+                    }
                 }
             }
         }
@@ -31,7 +35,23 @@ struct ContentView: View {
             browser.syncAddressWithSelection()
         }
         .sheet(isPresented: $showsSettings) { BackendSettingsView(browser: browser) }
+        .onAppear { if !browser.isBackendConfigured { showsSettings = true } }
         .task { await browser.maintain() }
+    }
+
+    private var backendSetupPrompt: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "network").foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 3) {
+                Text("Connect your backend").font(.headline)
+                Text("Add your AstraBrowse service URL to create native views and receive updates.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            Spacer()
+            Button("Configure Backend") { showsSettings = true }
+        }
+        .padding(.horizontal, 24).padding(.vertical, 14)
+        .background(.quaternary.opacity(0.5))
     }
 
     private var addressBar: some View {
@@ -58,6 +78,7 @@ struct ContentView: View {
 
     private func newTab() { browser.newTab(); addressFocused = true }
     private func prepareAddress() {
+        guard browser.isBackendConfigured else { showsSettings = true; return }
         browser.prepareAddress()
         if browser.addressError == nil { addressFocused = false }
     }

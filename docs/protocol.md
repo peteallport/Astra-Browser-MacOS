@@ -1,6 +1,6 @@
 # AstraBrowse protocol v1
 
-Shared contract for the native, API, and translation implementation lanes. Cloud operations require Peter's explicit confirmation; this contract does not grant it.
+Shared contract for the native, API, and translation implementation lanes. Use your configured backend origin; `https://backend.example.com` is a reserved documentation example. Cloud operations require the deployment operator's authorization; this contract does not grant it.
 
 ## Wire envelope
 
@@ -59,10 +59,10 @@ SSE events, each with JSON data followed by a blank line:
 | `ready` | `{ "manifest": PageManifest }` |
 | `error` | `{ "code": "CLOUD_APPROVAL_REQUIRED", "message": "..." }` |
 
-Exactly one terminal ready/error is emitted if the stream remains connected. Cancellation aborts acquisition and closes temporary sessions. Live View URLs must never enter manifests, artifacts, persistent caches, or logs.
+Exactly one terminal ready/error is emitted if the stream remains connected. Owner cancellation aborts acquisition and initiates temporary-session closure; followers receive an explicit terminal cancellation error. Cancelling only a follower leaves its owner running. Closure after a hard cancellation or late launch remains best effort once the owning invocation ends. Live View URLs must never enter manifests, artifacts, persistent caches, or logs.
 
 Publish the complete immutable bundle before its manifest. Hash source content independently of acquisition/check timestamps; unchanged content cannot create a content badge. Use conditional manifest publication to reject stale writers. On any invalid/missing artifact, retain the previous complete local revision.
 
 ## Local verification and cloud gate
 
-Use injected local memory storage and test adapters for HTTP tests; label fixtures as fixtures and keep default local execution cloud-disabled. Peter approved the listed production resources/configuration, deployment, and bounded conversion/revalidation on September 8; that authorization remains in force and does not require renewed confirmation for the same scope. See [the activation record](cloud-change-proposal.md) and [actual verification results](local-verification.md). Production adapters still enforce their runtime gate. Additional resources, secrets, schedules, or operations beyond the approved scope require separate confirmation. Peter also authorized committing and pushing the current work; that does not authorize repository visibility changes or hackathon submission.
+Use injected local memory storage and test adapters for HTTP tests; label fixtures as fixtures and keep default local execution cloud-disabled. Configure your own account/resources through the [backend setup guide](../backend/README.md). The tracked Wrangler template supports local development and dry-run packaging; account-specific deployment values belong only in the ignored private configuration. Production adapters enforce their runtime gate. See the [configuration boundary](cloud-change-proposal.md) and [historical verification results](local-verification.md). Neither a protocol contract nor past demo evidence authorizes new resources, billing changes, credentials, deployment, or publication.

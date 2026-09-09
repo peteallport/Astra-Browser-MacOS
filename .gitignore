@@ -15,3 +15,6 @@ dist/
 .env.*
 !.env.example
 *.log
+
+# Account-specific deployment configuration stays local.
+/backend/wrangler.deploy.jsonc
